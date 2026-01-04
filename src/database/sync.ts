@@ -225,8 +225,8 @@ export async function getLastSyncTimestamp(): Promise<number> {
       "@react-native-async-storage/async-storage"
     );
     const timestamp = await AsyncStorage.default.getItem("last_sync_timestamp");
-    return timestamp ? parseInt(timestamp, 10) : 0;
-  } catch (error) {
+    return timestamp ? Number.parseInt(timestamp, 10) : 0;
+  } catch (_error) {
     return 0;
   }
 }
