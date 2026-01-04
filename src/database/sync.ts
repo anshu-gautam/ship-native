@@ -148,12 +148,12 @@ export async function pullChanges(
             const localUpdatedAt = (local._raw as any).updated_at || 0;
             const remoteUpdatedAt = record.updatedAt || 0;
 
-            // Conflict resolution: server wins if newer, otherwise keep local
-            if (remoteUpdatedAt >= localUpdatedAt) {
+            // Conflict resolution: newest timestamp wins, local wins on tie
+            if (remoteUpdatedAt > localUpdatedAt) {
               await local.update((obj: any) => Object.assign(obj, record));
             } else {
               console.log(
-                `[Sync] Conflict: keeping local version of ${table}/${record.id}`
+                `[Sync] Conflict: keeping local version of ${table}/${record.id} (local: ${localUpdatedAt}, remote: ${remoteUpdatedAt})`
               );
             }
           } catch {

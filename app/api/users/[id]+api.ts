@@ -1,5 +1,6 @@
 import { verifyAuthToken, AuthToken } from "../middleware/auth";
 import { checkRateLimit } from "../middleware/rateLimit";
+import { z } from "zod";
 
 // Authorization helper: users can access own data, admins can access any
 const canAccessUser = (token: AuthToken, targetUserId: string): boolean =>
@@ -115,11 +116,36 @@ export async function PATCH(request: Request, { id }: { id: string }) {
       );
     }
 
-    // Validate and sanitize input
-    const allowedFields = ["firstName", "lastName", "email"];
-    const updates = Object.keys(body)
-      .filter((key) => allowedFields.includes(key))
-      .reduce((obj, key) => ({ ...obj, [key]: body[key] }), {});
+    // Validate and sanitize input with Zod
+    const updateSchema = z.object({
+      firstName: z
+        .string()
+        .min(1)
+        .max(50)
+        .regex(/^[a-zA-Z\s-']+$/, "Invalid characters")
+        .optional(),
+      lastName: z
+        .string()
+        .min(1)
+        .max(50)
+        .regex(/^[a-zA-Z\s-']+$/, "Invalid characters")
+        .optional(),
+      email: z.string().email("Invalid email format").max(255).optional(),
+    });
+
+    const result = updateSchema.safeParse(body);
+    if (!result.success) {
+      return Response.json(
+        {
+          status: "error",
+          message: "Validation failed",
+          details: result.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const updates = result.data;
 
     // Update user
     users[userIndex] = {

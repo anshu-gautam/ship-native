@@ -22,8 +22,16 @@ interface JWTPayload {
   exp?: number;
 }
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || "development-secret-change-in-production";
+// Ensure JWT_SECRET is set in production
+const isProduction = process.env.NODE_ENV === "production";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET && isProduction) {
+  throw new Error("JWT_SECRET environment variable is required in production");
+}
+
+// Only use fallback in development
+const SECRET = JWT_SECRET || "development-secret-do-not-use-in-production";
 
 export async function verifyAuthToken(
   request: Request
@@ -38,7 +46,7 @@ export async function verifyAuthToken(
 
   try {
     // Verify JWT signature and decode payload
-    const secret = new TextEncoder().encode(JWT_SECRET);
+    const secret = new TextEncoder().encode(SECRET);
     const { payload } = await jose.jwtVerify(token, secret, {
       algorithms: ["HS256"],
     });
@@ -71,7 +79,7 @@ export async function createAuthToken(
   userId: string,
   role: "user" | "admin" = "user"
 ): Promise<string> {
-  const secret = new TextEncoder().encode(JWT_SECRET);
+  const secret = new TextEncoder().encode(SECRET);
 
   return await new jose.SignJWT({ sub: userId, role })
     .setProtectedHeader({ alg: "HS256" })

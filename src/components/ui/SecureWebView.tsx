@@ -123,13 +123,20 @@ export function SecureWebView({
     (navState: WebViewNavigation) => {
       // Check domain whitelist
       if (allowedDomains && navState.url) {
-        const url = new URL(navState.url);
-        const isAllowed = allowedDomains.some(
-          (domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`)
-        );
+        try {
+          const url = new URL(navState.url);
+          const isAllowed = allowedDomains.some(
+            (domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`)
+          );
 
-        if (!isAllowed) {
-          console.warn('[WebView] Navigation blocked:', navState.url);
+          if (!isAllowed) {
+            console.warn('[WebView] Navigation blocked:', navState.url);
+            webViewRef.current?.stopLoading();
+            return;
+          }
+        } catch {
+          // Invalid URL - block navigation as a safety measure
+          console.warn('[WebView] Invalid URL blocked:', navState.url);
           webViewRef.current?.stopLoading();
           return;
         }
