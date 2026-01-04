@@ -1,21 +1,28 @@
 /**
- * Rate Limit Middleware Example
+ * Rate Limit Middleware
  *
- * This is a reference implementation for rate limiting.
- * In production, use a proper rate limiting service like Upstash or Redis.
+ * ⚠️  WARNING: This in-memory implementation is for DEVELOPMENT ONLY.
+ * It resets on restart and doesn't scale across multiple instances.
  *
- * Example usage:
+ * For PRODUCTION, use Upstash Redis:
  * ```ts
- * export async function GET(request: Request) {
- *   const clientId = request.headers.get('x-forwarded-for') || 'unknown';
- *   if (!checkRateLimit(clientId)) {
- *     return Response.json({ error: 'Too many requests' }, { status: 429 });
- *   }
- *   // Process request
+ * import { Ratelimit } from '@upstash/ratelimit';
+ * import { Redis } from '@upstash/redis';
+ *
+ * const ratelimit = new Ratelimit({
+ *   redis: Redis.fromEnv(),
+ *   limiter: Ratelimit.slidingWindow(100, '1 m'),
+ * });
+ *
+ * export async function checkRateLimit(clientId: string): Promise<boolean> {
+ *   const { success } = await ratelimit.limit(clientId);
+ *   return success;
  * }
  * ```
+ * Install: npm install @upstash/ratelimit @upstash/redis
  */
 
+// TODO: Replace with Upstash/Redis in production
 interface RateLimitStore {
   [key: string]: {
     count: number;
@@ -23,9 +30,14 @@ interface RateLimitStore {
   };
 }
 
+// ⚠️ In-memory store - for development only
 const store: RateLimitStore = {};
 
-export function checkRateLimit(clientId: string, maxRequests = 100, windowMs = 60000): boolean {
+export function checkRateLimit(
+  clientId: string,
+  maxRequests = 100,
+  windowMs = 60000
+): boolean {
   const now = Date.now();
   const clientData = store[clientId];
 

@@ -1,34 +1,81 @@
 /**
- * Auth Middleware Example
+ * Auth Middleware
  *
- * This is a reference implementation for authentication middleware.
- * In Expo Router API routes, you can check authentication directly in your handler.
+ * JWT-based authentication middleware for API routes.
+ * Uses jose for edge-compatible token verification.
  *
- * Example usage:
- * ```ts
- * export async function GET(request: Request) {
- *   const authHeader = request.headers.get('authorization');
- *   if (!authHeader?.startsWith('Bearer ')) {
- *     return Response.json({ error: 'Unauthorized' }, { status: 401 });
- *   }
- *   // Verify token and proceed
- * }
- * ```
+ * Setup:
+ * 1. npm install jose
+ * 2. Set JWT_SECRET environment variable
  */
 
-export function verifyAuthToken(request: Request): string | null {
-  const authHeader = request.headers.get('authorization');
+import * as jose from "jose";
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+export interface AuthToken {
+  userId: string;
+  role: "user" | "admin";
+}
+
+interface JWTPayload {
+  sub: string; // userId
+  role?: string;
+  exp?: number;
+}
+
+const JWT_SECRET =
+  process.env.JWT_SECRET || "development-secret-change-in-production";
+
+export async function verifyAuthToken(
+  request: Request
+): Promise<AuthToken | null> {
+  const authHeader = request.headers.get("authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
 
   const token = authHeader.substring(7);
 
-  // In a real app, verify the token here
-  // For example, using Clerk's verifyToken or JWT verification
-  // const decoded = await verifyToken(token);
-  // return decoded.userId;
+  try {
+    // Verify JWT signature and decode payload
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jose.jwtVerify(token, secret, {
+      algorithms: ["HS256"],
+    });
 
-  return token;
+    const jwtPayload = payload as unknown as JWTPayload;
+
+    if (!jwtPayload.sub) {
+      console.error("JWT missing sub claim");
+      return null;
+    }
+
+    return {
+      userId: jwtPayload.sub,
+      role: jwtPayload.role === "admin" ? "admin" : "user",
+    };
+  } catch (error) {
+    // Token invalid, expired, or signature mismatch
+    console.error(
+      "JWT verification failed:",
+      error instanceof Error ? error.message : error
+    );
+    return null;
+  }
+}
+
+/**
+ * Helper to create a signed JWT (for login/auth endpoints)
+ */
+export async function createAuthToken(
+  userId: string,
+  role: "user" | "admin" = "user"
+): Promise<string> {
+  const secret = new TextEncoder().encode(JWT_SECRET);
+
+  return await new jose.SignJWT({ sub: userId, role })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(secret);
 }
