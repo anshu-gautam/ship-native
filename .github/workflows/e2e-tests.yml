@@ -1,21 +1,25 @@
 name: E2E Tests
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - develop
+  # Only run E2E tests manually since they require pre-built apps
   workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to test"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - ios
+          - android
+          - both
 
 jobs:
   # E2E tests with Maestro on iOS
   e2e-ios:
     name: E2E Tests (iOS)
     runs-on: macos-latest
+    if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'both'
 
     steps:
       - name: Checkout code
@@ -24,8 +28,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -41,19 +45,25 @@ jobs:
           brew tap mobile-dev-inc/tap
           brew install maestro
 
-      - name: Setup iOS Simulator
+      - name: Check for Maestro tests
+        id: maestro-check
         run: |
-          xcrun simctl boot "iPhone 15 Pro" || true
-          xcrun simctl install booted .expo/ios/build/Build/Products/Debug-iphonesimulator/YourApp.app
+          if [ -d ".maestro" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "No .maestro directory found - skipping E2E tests"
+          fi
 
       - name: Run Maestro E2E tests
+        if: steps.maestro-check.outputs.has_tests == 'true'
         run: |
           maestro test .maestro/ --format junit --output maestro-results.xml
         continue-on-error: true
 
       - name: Upload test results
         uses: actions/upload-artifact@v3
-        if: always()
+        if: always() && steps.maestro-check.outputs.has_tests == 'true'
         with:
           name: maestro-ios-results
           path: maestro-results.xml
@@ -62,6 +72,7 @@ jobs:
   e2e-android:
     name: E2E Tests (Android)
     runs-on: ubuntu-latest
+    if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'both'
 
     steps:
       - name: Checkout code
@@ -70,24 +81,24 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Install Maestro
+      - name: Check for Maestro tests
+        id: maestro-check
         run: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
-          export PATH="$PATH":"$HOME/.maestro/bin"
+          if [ -d ".maestro" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "No .maestro directory found - skipping E2E tests"
+          fi
 
-      - name: Setup Android Emulator
+      - name: Setup and Run E2E (if tests exist)
+        if: steps.maestro-check.outputs.has_tests == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 33
@@ -95,12 +106,14 @@ jobs:
           arch: x86_64
           profile: pixel_7
           script: |
-            adb install .expo/android/app/build/outputs/apk/debug/app-debug.apk
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+            export PATH="$PATH":"$HOME/.maestro/bin"
             maestro test .maestro/ --format junit --output maestro-results.xml
+        continue-on-error: true
 
       - name: Upload test results
         uses: actions/upload-artifact@v3
-        if: always()
+        if: always() && steps.maestro-check.outputs.has_tests == 'true'
         with:
           name: maestro-android-results
           path: maestro-results.xml

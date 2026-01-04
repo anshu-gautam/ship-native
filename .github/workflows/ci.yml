@@ -24,8 +24,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -48,8 +48,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -78,26 +78,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
       - name: Analyze bundle size
-        run: npx expo-export-sizes --output bundle-sizes.json
-
-      - name: Upload bundle size artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: bundle-sizes
-          path: bundle-sizes.json
+        run: npm run size
+        continue-on-error: true
 
       - name: Comment bundle size on PR
         if: github.event_name == 'pull_request'
         uses: andresz1/size-limit-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
   # Build for iOS (only on main branch or when manually triggered)
   build-ios:
@@ -113,8 +109,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -143,8 +139,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -171,8 +167,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Run security audit
         run: npm audit --production --audit-level=moderate

@@ -4,7 +4,7 @@
  * Displays placeholder loading states with shimmer animation
  */
 
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -54,8 +54,7 @@ export function SkeletonLoader({
 
   useEffect(() => {
     shimmer.value = withRepeat(withTiming(1, { duration: 1500 }), -1, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [shimmer]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(shimmer.value, [0, 1], [-width as number, width as number]);
@@ -118,11 +117,13 @@ interface SkeletonGroupProps {
 }
 
 export function SkeletonGroup({ count = 3, spacing = 12, itemProps }: SkeletonGroupProps) {
+  const id = useId();
   return (
     <View>
+      {/* biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items don't reorder, index with useId is stable */}
       {Array.from({ length: count }).map((_, index) => (
         <SkeletonLoader
-          key={`skeleton-${index}`}
+          key={`${id}-skeleton-${index}`}
           {...itemProps}
           style={{ marginBottom: index < count - 1 ? spacing : 0 }}
         />
