@@ -1,0 +1,30 @@
+# Maestro E2E Test: Authentication Flow
+# Tests the complete sign-in and sign-up flow
+#
+# Run with: maestro test .maestro/auth-flow.yaml
+
+appId: ${APP_ID}
+---
+
+# Test Sign Up Flow
+- launchApp
+- tapOn: "Sign Up"
+- inputText: "test@example.com"
+- tapOn: "Email"
+- inputText: "TestPassword123!"
+- tapOn: "Password"
+- tapOn: "Create Account"
+- assertVisible: "Welcome"
+
+# Test Sign Out
+- tapOn: "Profile"
+- tapOn: "Sign Out"
+- assertVisible: "Sign In"
+
+# Test Sign In Flow
+- inputText: "test@example.com"
+- tapOn: "Email"
+- inputText: "TestPassword123!"
+- tapOn: "Password"
+- tapOn: "Sign In"
+- assertVisible: "Home"

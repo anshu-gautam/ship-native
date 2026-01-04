@@ -1,0 +1,41 @@
+export const Colors = {
+  light: {
+    primary: '#0ea5e9',
+    primaryLight: '#38bdf8',
+    primaryDark: '#0284c7',
+    secondary: '#d946ef',
+    secondaryLight: '#e879f9',
+    secondaryDark: '#c026d3',
+    background: '#ffffff',
+    surface: '#f8fafc',
+    card: '#ffffff',
+    text: '#0f172a',
+    textSecondary: '#64748b',
+    border: '#e2e8f0',
+    error: '#ef4444',
+    success: '#22c55e',
+    warning: '#f59e0b',
+    info: '#3b82f6',
+  },
+  dark: {
+    primary: '#38bdf8',
+    primaryLight: '#7dd3fc',
+    primaryDark: '#0ea5e9',
+    secondary: '#e879f9',
+    secondaryLight: '#f0abfc',
+    secondaryDark: '#d946ef',
+    background: '#0f172a',
+    surface: '#1e293b',
+    card: '#1e293b',
+    text: '#f8fafc',
+    textSecondary: '#94a3b8',
+    border: '#334155',
+    error: '#f87171',
+    success: '#4ade80',
+    warning: '#fbbf24',
+    info: '#60a5fa',
+  },
+} as const;
+
+export type ColorScheme = keyof typeof Colors;
+export type ColorName = keyof (typeof Colors)['light'];

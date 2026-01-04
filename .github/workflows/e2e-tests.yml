@@ -1,0 +1,106 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  # E2E tests with Maestro on iOS
+  e2e-ios:
+    name: E2E Tests (iOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install Maestro
+        run: |
+          brew tap mobile-dev-inc/tap
+          brew install maestro
+
+      - name: Setup iOS Simulator
+        run: |
+          xcrun simctl boot "iPhone 15 Pro" || true
+          xcrun simctl install booted .expo/ios/build/Build/Products/Debug-iphonesimulator/YourApp.app
+
+      - name: Run Maestro E2E tests
+        run: |
+          maestro test .maestro/ --format junit --output maestro-results.xml
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: maestro-ios-results
+          path: maestro-results.xml
+
+  # E2E tests with Maestro on Android
+  e2e-android:
+    name: E2E Tests (Android)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH":"$HOME/.maestro/bin"
+
+      - name: Setup Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          script: |
+            adb install .expo/android/app/build/outputs/apk/debug/app-debug.apk
+            maestro test .maestro/ --format junit --output maestro-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: maestro-android-results
+          path: maestro-results.xml

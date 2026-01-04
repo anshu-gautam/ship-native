@@ -1,0 +1,8 @@
+{
+  "projectId": "YOUR_PROJECT_ID",
+  "buildScriptName": "storybook:build",
+  "storybookBuildDir": ".storybook-static",
+  "autoAcceptChanges": "main",
+  "exitZeroOnChanges": true,
+  "exitOnceUploaded": true
+}

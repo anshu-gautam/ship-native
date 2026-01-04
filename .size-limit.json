@@ -1,0 +1,25 @@
+{
+  "scripts": {
+    "analyze:bundle": "npx expo export:web && npx source-map-explorer 'dist/**/*.js' --html bundle-report.html",
+    "analyze:size": "npx expo-export-sizes",
+    "check:size": "size-limit",
+    "prebuild": "npm run analyze:size"
+  },
+  "size-limit": [
+    {
+      "name": "iOS Bundle",
+      "path": "dist/bundles/ios-*.js",
+      "limit": "1 MB"
+    },
+    {
+      "name": "Android Bundle",
+      "path": "dist/bundles/android-*.js",
+      "limit": "1 MB"
+    },
+    {
+      "name": "All Assets",
+      "path": "dist/**/*",
+      "limit": "5 MB"
+    }
+  ]
+}
