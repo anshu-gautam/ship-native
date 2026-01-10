@@ -101,7 +101,8 @@ export function SecureWebView({
         if (message.type.startsWith('console.')) {
           const level = message.type.split('.')[1];
           const payload = message.payload;
-          const args = payload && typeof payload === 'object' && 'args' in payload ? payload.args : [];
+          const args =
+            payload && typeof payload === 'object' && 'args' in payload ? payload.args : [];
           console.log(`[WebView ${level}]:`, args);
           return;
         }

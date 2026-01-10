@@ -310,9 +310,9 @@ class FeatureFlagsManager {
     if (!__DEV__) return;
 
     const allFlags = this.getAllFlags();
-    allFlags.forEach((flag) => {
+    for (const flag of allFlags) {
       this.setDebugOverride(flag.key, null);
-    });
+    }
   }
 }
 

@@ -67,8 +67,7 @@ function ToastItem({ toast, onHide }: ToastItemProps) {
     }
 
     return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast.position, toast.duration, toast.id, onHide]);
+  }, [toast.position, toast.duration, toast.id, onHide, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

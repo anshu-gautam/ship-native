@@ -108,14 +108,14 @@ export async function uploadFile(
     parameters?: Record<string, string>;
     onProgress?: (progress: UploadProgress) => void;
   }
-): Promise<{ success: boolean; response?: any; error?: string }> {
+): Promise<{ success: boolean; response?: unknown; error?: string }> {
   try {
     const uploadTask = FileSystem.createUploadTask(
       uploadUrl,
       fileUri,
       {
         fieldName: options?.fieldName || 'file',
-        httpMethod: (options?.httpMethod as any) || 'POST',
+        httpMethod: (options?.httpMethod as 'POST' | 'PUT' | 'PATCH') || 'POST',
         headers: options?.headers,
         parameters: options?.parameters,
         uploadType: FileSystem.FileSystemUploadType.MULTIPART,
@@ -193,7 +193,7 @@ export async function downloadFile(
 
     const result = await downloadResumable.downloadAsync();
 
-    if (result && result.uri) {
+    if (result?.uri) {
       return {
         success: true,
         uri: result.uri,

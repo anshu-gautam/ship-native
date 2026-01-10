@@ -20,9 +20,9 @@
  * ```
  */
 
-import { useRef, useCallback, useMemo } from 'react';
 import { AccessibilityAuditor } from '@/lib/accessibility';
-import type { AccessibilityReport, AccessibilityIssue } from '@/lib/accessibility';
+import type { AccessibilityIssue, AccessibilityReport } from '@/lib/accessibility';
+import { useCallback, useMemo, useRef } from 'react';
 
 export interface UseAccessibilityAuditReturn {
   /**
@@ -78,12 +78,7 @@ export function useAccessibilityAudit(): UseAccessibilityAuditReturn {
         elementName: string,
         isLargeText = false
       ) => {
-        auditorRef.current.auditColorContrast(
-          foreground,
-          background,
-          elementName,
-          isLargeText
-        );
+        auditorRef.current.auditColorContrast(foreground, background, elementName, isLargeText);
       },
 
       accessibilityLabel: (label: string | undefined, elementName: string) => {

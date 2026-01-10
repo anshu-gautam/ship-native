@@ -137,9 +137,11 @@
       "beforeAll",
       "afterAll",
       "test",
+      "fail",
       "__DEV__",
       "React",
-      "JSX"
+      "JSX",
+      "ErrorUtils"
     ]
   }
 }

@@ -48,7 +48,7 @@ export const handlers = [
   }),
 
   http.patch(`${API_URL}/user/profile`, async ({ request }) => {
-    const body = (await request.json()) as Record<string, any>;
+    const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       id: 'user-123',
       ...body,

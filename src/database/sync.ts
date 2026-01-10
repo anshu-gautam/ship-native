@@ -5,8 +5,9 @@
  * Handles offline-first data flow and conflict resolution.
  */
 
-import { synchronize } from "@nozbe/watermelondb/sync";
-import { database } from "./index";
+import type { Model } from '@nozbe/watermelondb';
+import { synchronize } from '@nozbe/watermelondb/sync';
+import { database } from './index';
 
 interface SyncResult {
   success: boolean;
@@ -19,13 +20,21 @@ interface SyncResult {
   error?: string;
 }
 
+interface RawRecord {
+  id: string;
+  updatedAt?: number;
+  [key: string]: unknown;
+}
+
+interface RawModel {
+  updated_at?: number;
+  [key: string]: unknown;
+}
+
 /**
  * Sync database with remote API
  */
-export async function syncDatabase(
-  apiUrl: string,
-  authToken: string
-): Promise<SyncResult> {
+export async function syncDatabase(apiUrl: string, authToken: string): Promise<SyncResult> {
   const startTime = Date.now();
 
   try {
@@ -34,9 +43,9 @@ export async function syncDatabase(
       pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
         // Fetch changes from API since lastPulledAt
         const response = await fetch(`${apiUrl}/sync/pull`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
@@ -58,9 +67,9 @@ export async function syncDatabase(
       pushChanges: async ({ changes, lastPulledAt }) => {
         // Push local changes to API
         const response = await fetch(`${apiUrl}/sync/push`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
@@ -82,12 +91,12 @@ export async function syncDatabase(
       timestamp: Date.now() - startTime,
     };
   } catch (error) {
-    console.error("[Sync] Failed to sync database:", error);
+    console.error('[Sync] Failed to sync database:', error);
 
     return {
       success: false,
       timestamp: Date.now() - startTime,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -95,15 +104,12 @@ export async function syncDatabase(
 /**
  * Pull changes from remote (one-way sync)
  */
-export async function pullChanges(
-  apiUrl: string,
-  authToken: string
-): Promise<SyncResult> {
+export async function pullChanges(apiUrl: string, authToken: string): Promise<SyncResult> {
   try {
     const response = await fetch(`${apiUrl}/sync/pull`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
@@ -123,18 +129,22 @@ export async function pullChanges(
       // Process created records
       for (const [table, records] of Object.entries(changes.created || {})) {
         const collection = database.get(table);
-        for (const record of records as any[]) {
+        for (const record of records as RawRecord[]) {
           // Check if record already exists (created offline)
           try {
             const existing = await collection.find(record.id);
             // Conflict: record exists locally - use timestamp to resolve
-            if (record.updatedAt > (existing._raw as any).updated_at) {
-              await existing.update((obj: any) => Object.assign(obj, record));
+            const existingRaw = existing._raw as RawModel;
+            if (
+              record.updatedAt &&
+              existingRaw.updated_at &&
+              record.updatedAt > existingRaw.updated_at
+            ) {
+              await existing.update((obj: Model) => Object.assign(obj, record));
             }
-            // else: keep local version (it's newer)
           } catch {
             // Record doesn't exist, create it
-            await collection.create((obj: any) => Object.assign(obj, record));
+            await collection.create((obj: Model) => Object.assign(obj, record));
           }
         }
       }
@@ -142,24 +152,23 @@ export async function pullChanges(
       // Process updated records with conflict resolution
       for (const [table, records] of Object.entries(changes.updated || {})) {
         const collection = database.get(table);
-        for (const record of records as any[]) {
+        for (const record of records as RawRecord[]) {
           try {
             const local = await collection.find(record.id);
-            const localUpdatedAt = (local._raw as any).updated_at || 0;
+            const localRaw = local._raw as RawModel;
+            const localUpdatedAt = localRaw.updated_at || 0;
             const remoteUpdatedAt = record.updatedAt || 0;
 
             // Conflict resolution: newest timestamp wins, local wins on tie
             if (remoteUpdatedAt > localUpdatedAt) {
-              await local.update((obj: any) => Object.assign(obj, record));
+              await local.update((obj: Model) => Object.assign(obj, record));
             } else {
               console.log(
                 `[Sync] Conflict: keeping local version of ${table}/${record.id} (local: ${localUpdatedAt}, remote: ${remoteUpdatedAt})`
               );
             }
           } catch {
-            console.warn(
-              `[Sync] Record not found for update: ${table}/${record.id}`
-            );
+            console.warn(`[Sync] Record not found for update: ${table}/${record.id}`);
           }
         }
       }
@@ -182,16 +191,16 @@ export async function pullChanges(
       success: true,
       timestamp: Date.now(),
       changes: {
-        created: Object.values(changes.created || {}).reduce(
-          (sum: number, arr: any) => sum + arr.length,
+        created: Object.values(changes.created || {}).reduce<number>(
+          (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
           0
         ),
-        updated: Object.values(changes.updated || {}).reduce(
-          (sum: number, arr: any) => sum + arr.length,
+        updated: Object.values(changes.updated || {}).reduce<number>(
+          (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
           0
         ),
-        deleted: Object.values(changes.deleted || {}).reduce(
-          (sum: number, arr: any) => sum + arr.length,
+        deleted: Object.values(changes.deleted || {}).reduce<number>(
+          (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
           0
         ),
       },
@@ -200,7 +209,7 @@ export async function pullChanges(
     return {
       success: false,
       timestamp: Date.now(),
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -208,10 +217,7 @@ export async function pullChanges(
 /**
  * Check if sync is needed
  */
-export function isSyncNeeded(
-  lastSyncTimestamp: number,
-  intervalMs = 300000
-): boolean {
+export function isSyncNeeded(lastSyncTimestamp: number, intervalMs = 300000): boolean {
   // Default: sync every 5 minutes
   return Date.now() - lastSyncTimestamp > intervalMs;
 }
@@ -221,10 +227,8 @@ export function isSyncNeeded(
  */
 export async function getLastSyncTimestamp(): Promise<number> {
   try {
-    const AsyncStorage = await import(
-      "@react-native-async-storage/async-storage"
-    );
-    const timestamp = await AsyncStorage.default.getItem("last_sync_timestamp");
+    const AsyncStorage = await import('@react-native-async-storage/async-storage');
+    const timestamp = await AsyncStorage.default.getItem('last_sync_timestamp');
     return timestamp ? Number.parseInt(timestamp, 10) : 0;
   } catch (_error) {
     return 0;
@@ -236,14 +240,9 @@ export async function getLastSyncTimestamp(): Promise<number> {
  */
 export async function saveLastSyncTimestamp(timestamp: number): Promise<void> {
   try {
-    const AsyncStorage = await import(
-      "@react-native-async-storage/async-storage"
-    );
-    await AsyncStorage.default.setItem(
-      "last_sync_timestamp",
-      timestamp.toString()
-    );
+    const AsyncStorage = await import('@react-native-async-storage/async-storage');
+    await AsyncStorage.default.setItem('last_sync_timestamp', timestamp.toString());
   } catch (error) {
-    console.error("[Sync] Failed to save sync timestamp:", error);
+    console.error('[Sync] Failed to save sync timestamp:', error);
   }
 }
