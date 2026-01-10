@@ -3,9 +3,9 @@
  */
 
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, children } from '@nozbe/watermelondb/decorators';
-import type Post from './Post';
+import { children, date, field, readonly } from '@nozbe/watermelondb/decorators';
 import type Comment from './Comment';
+import type Post from './Post';
 
 export default class User extends Model {
   static table = 'users';

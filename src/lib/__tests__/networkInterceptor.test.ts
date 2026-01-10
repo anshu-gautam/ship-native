@@ -2,8 +2,8 @@
  * Network Interceptor Tests
  */
 
-import { NetworkInterceptor, NetworkErrorType } from '../networkInterceptor';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { NetworkErrorType, NetworkInterceptor } from '../networkInterceptor';
 
 // Mock Sentry
 jest.mock('@sentry/react-native', () => ({
@@ -134,7 +134,7 @@ describe('NetworkInterceptor', () => {
 
       try {
         await interceptor.retryRequest(error, 0);
-      } catch (e) {
+      } catch {
         // Expected to throw after delay
       }
 
@@ -197,7 +197,7 @@ describe('NetworkInterceptor', () => {
         method: 'get',
         url: '/api/test',
         params: { id: 1 },
-        headers: {} as any,
+        headers: {},
       } as InternalAxiosRequestConfig;
 
       let executionCount = 0;
@@ -224,7 +224,7 @@ describe('NetworkInterceptor', () => {
         method: 'post',
         url: '/api/test',
         data: { name: 'test' },
-        headers: {} as any,
+        headers: {},
       } as InternalAxiosRequestConfig;
 
       let executionCount = 0;
@@ -244,10 +244,7 @@ describe('NetworkInterceptor', () => {
 
   describe('checkRateLimit', () => {
     it('allows requests within rate limit', () => {
-      const customInterceptor = new NetworkInterceptor(
-        {},
-        { maxRequests: 5, windowMs: 60000 }
-      );
+      const customInterceptor = new NetworkInterceptor({}, { maxRequests: 5, windowMs: 60000 });
 
       // Should allow first 5 requests
       expect(customInterceptor.checkRateLimit()).toBe(true);
@@ -261,10 +258,7 @@ describe('NetworkInterceptor', () => {
     });
 
     it('resets rate limit after reset', () => {
-      const customInterceptor = new NetworkInterceptor(
-        {},
-        { maxRequests: 2, windowMs: 60000 }
-      );
+      const customInterceptor = new NetworkInterceptor({}, { maxRequests: 2, windowMs: 60000 });
 
       expect(customInterceptor.checkRateLimit()).toBe(true);
       expect(customInterceptor.checkRateLimit()).toBe(true);
@@ -281,7 +275,7 @@ describe('NetworkInterceptor', () => {
       const config = {
         method: 'get',
         url: '/api/test',
-        headers: {} as any,
+        headers: {},
       } as InternalAxiosRequestConfig;
 
       let executionCount = 0;
@@ -306,7 +300,7 @@ describe('NetworkInterceptor', () => {
   describe('getRetryCount', () => {
     it('returns 0 for new requests', () => {
       const config = {
-        headers: {} as any,
+        headers: {},
       } as InternalAxiosRequestConfig;
 
       expect(interceptor.getRetryCount(config)).toBe(0);
@@ -314,7 +308,7 @@ describe('NetworkInterceptor', () => {
 
     it('returns correct retry count', () => {
       const config = {
-        headers: {} as any,
+        headers: {},
         __retryCount: 2,
       } as InternalAxiosRequestConfig & { __retryCount?: number };
 

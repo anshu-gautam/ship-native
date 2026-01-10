@@ -3,17 +3,17 @@
  */
 
 import {
+  DeepLinkTestSuite,
+  formatTestResults,
+  generateAllMaestroTests,
+  generateCommonTestCases,
+  generateDeepLink,
+  generateMaestroTest,
+  generateUniversalLink,
   parseDeepLink,
-  validateDeepLink,
   testDeepLink,
   testDeepLinks,
-  generateCommonTestCases,
-  formatTestResults,
-  generateDeepLink,
-  generateUniversalLink,
-  DeepLinkTestSuite,
-  generateMaestroTest,
-  generateAllMaestroTests,
+  validateDeepLink,
 } from '../deepLinkTesting';
 import type { DeepLinkConfig, DeepLinkTestCase } from '../deepLinkTesting';
 
@@ -29,7 +29,7 @@ jest.mock('expo-linking', () => ({
       }
 
       const urlObj = new URL(normalizedUrl);
-      const params: Record<string, any> = {};
+      const params: Record<string, string> = {};
 
       urlObj.searchParams.forEach((value, key) => {
         params[key] = value;
@@ -45,7 +45,7 @@ jest.mock('expo-linking', () => ({
         path,
         queryParams: params,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         path: '',
         queryParams: {},
@@ -92,7 +92,9 @@ describe('DeepLinkTesting', () => {
     });
 
     it('handles URL encoded params', () => {
-      const result = parseDeepLink('myapp://share?url=https%3A%2F%2Fexample.com&title=Hello%20World');
+      const result = parseDeepLink(
+        'myapp://share?url=https%3A%2F%2Fexample.com&title=Hello%20World'
+      );
 
       expect(result?.params).toEqual({
         url: 'https://example.com',
@@ -346,7 +348,11 @@ describe('DeepLinkTesting', () => {
     });
 
     it('encodes special characters', () => {
-      const url = generateDeepLink('share', { url: 'https://example.com', title: 'Hello World' }, config);
+      const url = generateDeepLink(
+        'share',
+        { url: 'https://example.com', title: 'Hello World' },
+        config
+      );
 
       expect(url).toContain('url=https%3A%2F%2Fexample.com');
       expect(url).toContain('title=Hello%20World');
@@ -478,9 +484,7 @@ describe('DeepLinkTesting', () => {
     });
 
     it('generates valid YAML content', () => {
-      const testCases: DeepLinkTestCase[] = [
-        { name: 'Test Case', url: 'myapp://test' },
-      ];
+      const testCases: DeepLinkTestCase[] = [{ name: 'Test Case', url: 'myapp://test' }];
 
       const tests = generateAllMaestroTests(testCases);
       const yaml = tests.get('test_case.yaml');

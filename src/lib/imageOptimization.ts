@@ -10,11 +10,11 @@
  * - Memory-efficient loading
  */
 
-import { Image, Platform, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { logger, LogCategory } from './logger';
+import { Dimensions, Image, Platform } from 'react-native';
+import { LogCategory, logger } from './logger';
 
 export interface ImageOptimizationConfig {
   maxWidth?: number;
@@ -89,7 +89,12 @@ class ImageOptimizer {
       this.initialized = true;
       logger.info('Image optimizer initialized', LogCategory.PERFORMANCE);
     } catch (error) {
-      logger.error('Failed to initialize image optimizer', LogCategory.PERFORMANCE, {}, error as Error);
+      logger.error(
+        'Failed to initialize image optimizer',
+        LogCategory.PERFORMANCE,
+        {},
+        error as Error
+      );
     }
   }
 
@@ -162,13 +167,14 @@ class ImageOptimizer {
     const expiredKeys: string[] = [];
 
     for (const [key, cached] of this.cacheIndex.entries()) {
-      if (now - cached.timestamp > (this.config.cacheExpiry || DEFAULT_CONFIG.cacheExpiry!)) {
+      const cacheExpiry = this.config.cacheExpiry ?? DEFAULT_CONFIG.cacheExpiry ?? 86400000;
+      if (now - cached.timestamp > cacheExpiry) {
         expiredKeys.push(key);
 
         // Delete file
         try {
           await FileSystem.deleteAsync(cached.cachedPath, { idempotent: true });
-        } catch (error) {
+        } catch (_error) {
           logger.warn('Failed to delete expired cache file', LogCategory.PERFORMANCE, {
             path: cached.cachedPath,
           });
@@ -177,7 +183,9 @@ class ImageOptimizer {
     }
 
     // Remove from index
-    expiredKeys.forEach((key) => this.cacheIndex.delete(key));
+    for (const key of expiredKeys) {
+      this.cacheIndex.delete(key);
+    }
 
     if (expiredKeys.length > 0) {
       await this.saveCacheIndex();
@@ -196,8 +204,8 @@ class ImageOptimizer {
     const screenWidth = Dimensions.get('window').width;
     const pixelRatio = Platform.select({ ios: 2, android: 2, default: 1 });
 
-    let maxWidth = config.maxWidth || DEFAULT_CONFIG.maxWidth!;
-    let maxHeight = config.maxHeight || DEFAULT_CONFIG.maxHeight!;
+    const maxWidth = config.maxWidth ?? DEFAULT_CONFIG.maxWidth ?? 1920;
+    const maxHeight = config.maxHeight ?? DEFAULT_CONFIG.maxHeight ?? 1920;
 
     // Adjust for screen size and pixel ratio
     const targetWidth = Math.min(screenWidth * pixelRatio, maxWidth);
@@ -237,17 +245,19 @@ class ImageOptimizer {
 
     // Check cache first
     if (config.enableCache && this.cacheIndex.has(cacheKey)) {
-      const cached = this.cacheIndex.get(cacheKey)!;
+      const cached = this.cacheIndex.get(cacheKey);
+      if (!cached) {
+        throw new Error('Cache entry not found');
+      }
 
       // Verify file still exists
       const fileInfo = await FileSystem.getInfoAsync(cached.cachedPath);
       if (fileInfo.exists) {
         logger.debug('Returning cached image', LogCategory.PERFORMANCE, { uri });
         return cached.cachedPath;
-      } else {
-        // File was deleted, remove from index
-        this.cacheIndex.delete(cacheKey);
       }
+      // File was deleted, remove from index
+      this.cacheIndex.delete(cacheKey);
     }
 
     try {
@@ -264,10 +274,9 @@ class ImageOptimizer {
         imageSize.width > optimalDimensions.width || imageSize.height > optimalDimensions.height;
 
       // Manipulate image
-      const quality =
-        config.quality || QUALITY_PRESETS[config.compressionLevel || 'medium'] || 0.8;
+      const quality = config.quality || QUALITY_PRESETS[config.compressionLevel || 'medium'] || 0.8;
 
-      const manipulationOptions: any = [];
+      const manipulationOptions: ImageManipulator.Action[] = [];
 
       if (needsResize) {
         manipulationOptions.push({
@@ -275,14 +284,10 @@ class ImageOptimizer {
         });
       }
 
-      const result = await ImageManipulator.manipulateAsync(
-        uri,
-        manipulationOptions,
-        {
-          compress: quality,
-          format: this.getImageFormat(config.format || 'jpeg'),
-        }
-      );
+      const result = await ImageManipulator.manipulateAsync(uri, manipulationOptions, {
+        compress: quality,
+        format: this.getImageFormat(config.format || 'jpeg'),
+      });
 
       // Cache the result
       if (config.enableCache) {
@@ -352,7 +357,10 @@ class ImageOptimizer {
   /**
    * Prefetch and optimize multiple images
    */
-  async prefetchImages(uris: string[], options: Partial<ImageOptimizationConfig> = {}): Promise<void> {
+  async prefetchImages(
+    uris: string[],
+    options: Partial<ImageOptimizationConfig> = {}
+  ): Promise<void> {
     logger.info(`Prefetching ${uris.length} images`, LogCategory.PERFORMANCE);
 
     const promises = uris.map((uri) => this.optimizeImage(uri, options));

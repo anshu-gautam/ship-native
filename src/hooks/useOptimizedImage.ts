@@ -4,8 +4,8 @@
  * React hook for optimized image loading
  */
 
-import { useState, useEffect } from 'react';
-import { imageOptimizer, type ImageOptimizationConfig } from '@/lib/imageOptimization';
+import { type ImageOptimizationConfig, imageOptimizer } from '@/lib/imageOptimization';
+import { useEffect, useState } from 'react';
 
 export function useOptimizedImage(
   uri: string | undefined,
@@ -14,6 +14,9 @@ export function useOptimizedImage(
   const [optimizedUri, setOptimizedUri] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // Destructure options into primitive values for dependency tracking
+  const { maxWidth, maxHeight, quality, format, enableCache, compressionLevel } = options;
 
   useEffect(() => {
     if (!uri) {
@@ -28,8 +31,16 @@ export function useOptimizedImage(
       setError(null);
 
       try {
-        const optimized = await imageOptimizer.optimizeImage(uri, options);
+        // Reconstruct options from primitives
+        const currentOptions: Partial<ImageOptimizationConfig> = {};
+        if (maxWidth !== undefined) currentOptions.maxWidth = maxWidth;
+        if (maxHeight !== undefined) currentOptions.maxHeight = maxHeight;
+        if (quality !== undefined) currentOptions.quality = quality;
+        if (format !== undefined) currentOptions.format = format;
+        if (enableCache !== undefined) currentOptions.enableCache = enableCache;
+        if (compressionLevel !== undefined) currentOptions.compressionLevel = compressionLevel;
 
+        const optimized = await imageOptimizer.optimizeImage(uri, currentOptions);
         if (isMounted) {
           setOptimizedUri(optimized);
         }
@@ -50,7 +61,7 @@ export function useOptimizedImage(
     return () => {
       isMounted = false;
     };
-  }, [uri, JSON.stringify(options)]);
+  }, [uri, maxWidth, maxHeight, quality, format, enableCache, compressionLevel]);
 
   return { optimizedUri, loading, error };
 }

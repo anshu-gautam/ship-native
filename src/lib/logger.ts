@@ -39,7 +39,7 @@ export interface LogEntry {
   level: LogLevel;
   category: LogCategory;
   message: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   error?: Error;
   userId?: string;
   sessionId?: string;
@@ -124,7 +124,7 @@ export class Logger {
   debug(
     message: string,
     category: LogCategory = LogCategory.GENERAL,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     this.log(LogLevel.DEBUG, category, message, metadata);
   }
@@ -135,7 +135,7 @@ export class Logger {
   info(
     message: string,
     category: LogCategory = LogCategory.GENERAL,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     this.log(LogLevel.INFO, category, message, metadata);
   }
@@ -146,7 +146,7 @@ export class Logger {
   warn(
     message: string,
     category: LogCategory = LogCategory.GENERAL,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     this.log(LogLevel.WARN, category, message, metadata);
   }
@@ -157,7 +157,7 @@ export class Logger {
   error(
     message: string,
     category: LogCategory = LogCategory.GENERAL,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     error?: Error
   ): void {
     this.log(LogLevel.ERROR, category, message, metadata, error);
@@ -169,7 +169,7 @@ export class Logger {
   fatal(
     message: string,
     category: LogCategory = LogCategory.GENERAL,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     error?: Error
   ): void {
     this.log(LogLevel.FATAL, category, message, metadata, error);
@@ -182,7 +182,7 @@ export class Logger {
     level: LogLevel,
     category: LogCategory,
     message: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     error?: Error
   ): void {
     // Check if level meets minimum threshold
@@ -345,14 +345,12 @@ export class Logger {
   /**
    * Get stored logs from AsyncStorage
    */
-  async getStoredLogs(
-    filter?: {
-      level?: LogLevel;
-      category?: LogCategory;
-      startTime?: number;
-      endTime?: number;
-    }
-  ): Promise<LogEntry[]> {
+  async getStoredLogs(filter?: {
+    level?: LogLevel;
+    category?: LogCategory;
+    startTime?: number;
+    endTime?: number;
+  }): Promise<LogEntry[]> {
     try {
       const storedLogsJson = await AsyncStorage.getItem(STORAGE_KEY);
       let logs: LogEntry[] = storedLogsJson ? JSON.parse(storedLogsJson) : [];
@@ -416,10 +414,10 @@ export class Logger {
       byCategory: {} as Record<LogCategory, number>,
     };
 
-    logs.forEach((log) => {
+    for (const log of logs) {
       stats.byLevel[log.level]++;
       stats.byCategory[log.category] = (stats.byCategory[log.category] || 0) + 1;
-    });
+    }
 
     return stats;
   }
@@ -449,14 +447,22 @@ export const logger = new Logger();
 
 // Export utility functions
 export const log = {
-  debug: (message: string, category?: LogCategory, metadata?: Record<string, any>) =>
+  debug: (message: string, category?: LogCategory, metadata?: Record<string, unknown>) =>
     logger.debug(message, category, metadata),
-  info: (message: string, category?: LogCategory, metadata?: Record<string, any>) =>
+  info: (message: string, category?: LogCategory, metadata?: Record<string, unknown>) =>
     logger.info(message, category, metadata),
-  warn: (message: string, category?: LogCategory, metadata?: Record<string, any>) =>
+  warn: (message: string, category?: LogCategory, metadata?: Record<string, unknown>) =>
     logger.warn(message, category, metadata),
-  error: (message: string, category?: LogCategory, metadata?: Record<string, any>, error?: Error) =>
-    logger.error(message, category, metadata, error),
-  fatal: (message: string, category?: LogCategory, metadata?: Record<string, any>, error?: Error) =>
-    logger.fatal(message, category, metadata, error),
+  error: (
+    message: string,
+    category?: LogCategory,
+    metadata?: Record<string, unknown>,
+    error?: Error
+  ) => logger.error(message, category, metadata, error),
+  fatal: (
+    message: string,
+    category?: LogCategory,
+    metadata?: Record<string, unknown>,
+    error?: Error
+  ) => logger.fatal(message, category, metadata, error),
 };
