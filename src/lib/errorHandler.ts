@@ -76,7 +76,7 @@ export function setupGlobalErrorHandlers(): void {
   // Also handle console.error to catch more issues in development
   if (__DEV__) {
     const originalConsoleError = console.error;
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       // Still call original console.error
       originalConsoleError(...args);
 
@@ -103,7 +103,7 @@ export function reportError(
   error: Error,
   context?: {
     tags?: Record<string, string>;
-    extra?: Record<string, any>;
+    extra?: Record<string, unknown>;
     level?: 'fatal' | 'error' | 'warning' | 'info';
   }
 ): void {
@@ -126,7 +126,7 @@ export function reportMessage(
   context?: {
     level?: 'fatal' | 'error' | 'warning' | 'info';
     tags?: Record<string, string>;
-    extra?: Record<string, any>;
+    extra?: Record<string, unknown>;
   }
 ): void {
   Sentry.captureMessage(message, {

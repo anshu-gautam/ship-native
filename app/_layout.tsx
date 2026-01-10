@@ -9,8 +9,8 @@ import { I18nextProvider } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useTheme } from '@/hooks';
-import i18n from '@/lib/i18n';
 import { setupGlobalErrorHandlers } from '@/lib/errorHandler';
+import i18n from '@/lib/i18n';
 import { initSentry } from '@/lib/sentry';
 import { CLERK_PUBLISHABLE_KEY, tokenCache } from '@/services/clerk';
 

@@ -49,7 +49,7 @@ export async function shareContent(options: ShareOptions): Promise<boolean> {
 
     // For web, use Web Share API if available
     if (Platform.OS === 'web' && 'share' in navigator) {
-      await (navigator as any).share({
+      await (navigator as { share: (data: { title?: string; text?: string; url?: string }) => Promise<void> }).share({
         title: options.title,
         text: options.message,
         url: options.url,
