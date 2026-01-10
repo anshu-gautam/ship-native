@@ -83,8 +83,9 @@ export function getStoreUrl(customUrl?: string): string {
     // Replace with your actual App Store ID
     const appStoreId = Constants.expoConfig?.extra?.appStoreId || 'YOUR_APP_STORE_ID';
     return `https://apps.apple.com/app/id${appStoreId}`;
+  } else {
+    return `https://play.google.com/store/apps/details?id=${packageName}`;
   }
-  return `https://play.google.com/store/apps/details?id=${packageName}`;
 }
 
 /**

@@ -51,7 +51,7 @@ export async function getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
     const offering = await RevenueCat.getOfferings();
     if (offering) {
-      for (const pkg of offering.availablePackages) {
+      offering.availablePackages.forEach((pkg) => {
         const product = pkg.product;
         plans.push({
           id: pkg.identifier,
@@ -61,10 +61,10 @@ export async function getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
           priceValue: product.price,
           currency: product.currencyCode,
           period: getPeriodFromPackage(pkg.identifier),
-          features: [],
+          features: [], // Add features based on package type
           packageId: pkg.identifier,
         });
-      }
+      });
     }
   }
 
@@ -132,8 +132,7 @@ export async function purchaseSubscription(
     }
 
     return await RevenueCat.purchasePackage(pkg);
-  }
-  if (method === 'stripe' && plan.stripePriceId) {
+  } else if (method === 'stripe' && plan.stripePriceId) {
     // Use Stripe Checkout
     const success = await Stripe.openCheckout({
       priceId: plan.stripePriceId,
@@ -229,27 +228,29 @@ export async function manageSubscription(): Promise<boolean> {
     // Open iOS subscription management
     const { Linking } = await import('react-native');
     return await Linking.openURL('https://apps.apple.com/account/subscriptions');
-  }
-  if (Platform.OS === 'android') {
+  } else if (Platform.OS === 'android') {
     // Open Google Play subscription management
     const { Linking } = await import('react-native');
     const packageName = 'com.yourapp'; // Replace with your package name
     return await Linking.openURL(
       `https://play.google.com/store/account/subscriptions?package=${packageName}`
     );
-  }
-  // Open Stripe Customer Portal for web
-  // You need to get the customer ID from your backend
-  try {
-    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/subscription/customer-id`);
-    const data = await response.json();
-    if (data.customerId) {
-      return await Stripe.openCustomerPortal(data.customerId);
+  } else {
+    // Open Stripe Customer Portal for web
+    // You need to get the customer ID from your backend
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/subscription/customer-id`
+      );
+      const data = await response.json();
+      if (data.customerId) {
+        return await Stripe.openCustomerPortal(data.customerId);
+      }
+      return false;
+    } catch (error) {
+      console.error('Error opening subscription management:', error);
+      return false;
     }
-    return false;
-  } catch (error) {
-    console.error('Error opening subscription management:', error);
-    return false;
   }
 }
 

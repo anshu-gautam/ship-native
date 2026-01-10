@@ -3,7 +3,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LogCategory, LogLevel, Logger } from '../logger';
+import { Logger, LogLevel, LogCategory } from '../logger';
 
 // Mock Sentry
 jest.mock('@sentry/react-native', () => ({

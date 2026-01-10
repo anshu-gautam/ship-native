@@ -34,7 +34,7 @@ export interface AppShortcut {
   /**
    * Custom data to pass when shortcut is activated
    */
-  params?: Record<string, string | number | boolean | null | undefined>;
+  params?: Record<string, any>;
 }
 
 /**

@@ -89,13 +89,12 @@ export async function purchasePackage(
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return { success: true, customerInfo };
-  } catch (error: unknown) {
-    const err = error as { userCancelled?: boolean; message?: string };
-    if (err.userCancelled) {
+  } catch (error: any) {
+    if (error.userCancelled) {
       return { success: false, error: 'User cancelled purchase' };
     }
     console.error('Error purchasing package:', error);
-    return { success: false, error: err.message || 'Purchase failed' };
+    return { success: false, error: error.message || 'Purchase failed' };
   }
 }
 
@@ -112,13 +111,12 @@ export async function purchaseProduct(
     }
     const { customerInfo } = await Purchases.purchaseStoreProduct(products[0]);
     return { success: true, customerInfo };
-  } catch (error: unknown) {
-    const err = error as { userCancelled?: boolean; message?: string };
-    if (err.userCancelled) {
+  } catch (error: any) {
+    if (error.userCancelled) {
       return { success: false, error: 'User cancelled purchase' };
     }
     console.error('Error purchasing product:', error);
-    return { success: false, error: err.message || 'Purchase failed' };
+    return { success: false, error: error.message || 'Purchase failed' };
   }
 }
 
@@ -133,10 +131,9 @@ export async function restorePurchases(): Promise<{
   try {
     const customerInfo = await Purchases.restorePurchases();
     return { success: true, customerInfo };
-  } catch (error: unknown) {
-    const err = error as { message?: string };
+  } catch (error: any) {
     console.error('Error restoring purchases:', error);
-    return { success: false, error: err.message || 'Restore failed' };
+    return { success: false, error: error.message || 'Restore failed' };
   }
 }
 
@@ -203,10 +200,9 @@ export async function identifyUser(userId: string): Promise<{
   try {
     const { customerInfo } = await Purchases.logIn(userId);
     return { success: true, customerInfo };
-  } catch (error: unknown) {
-    const err = error as { message?: string };
+  } catch (error: any) {
     console.error('Error identifying user:', error);
-    return { success: false, error: err.message };
+    return { success: false, error: error.message };
   }
 }
 
@@ -221,10 +217,9 @@ export async function logoutUser(): Promise<{
   try {
     const customerInfo = await Purchases.logOut();
     return { success: true, customerInfo };
-  } catch (error: unknown) {
-    const err = error as { message?: string };
+  } catch (error: any) {
     console.error('Error logging out user:', error);
-    return { success: false, error: err.message };
+    return { success: false, error: error.message };
   }
 }
 

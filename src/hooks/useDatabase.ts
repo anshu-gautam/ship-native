@@ -4,10 +4,10 @@
  * Reactive hooks for database queries with automatic updates.
  */
 
-import { type Comment, type Post, type User, collections, database } from '@/database';
+import { useState, useEffect } from 'react';
 import { Q } from '@nozbe/watermelondb';
+import { database, collections, User, Post, Comment } from '@/database';
 import type { Model, Query } from '@nozbe/watermelondb';
-import { useEffect, useState } from 'react';
 
 /**
  * Subscribe to query changes
@@ -29,11 +29,14 @@ export function useQuery<T extends Model>(query: Query<T>): T[] {
 /**
  * Subscribe to single record changes
  */
-export function useRecord<T extends Model>(collection: string, id: string): T | null {
+export function useRecord<T extends Model>(
+  collection: string,
+  id: string
+): T | null {
   const [record, setRecord] = useState<T | null>(null);
 
   useEffect(() => {
-    let subscription: { unsubscribe: () => void } | undefined;
+    let subscription: any;
 
     const fetchAndObserve = async () => {
       try {
@@ -114,7 +117,9 @@ export function usePost(postId: string): Post | null {
  * Get comments for a post
  */
 export function useComments(postId: string): Comment[] {
-  const [query] = useState(() => collections.comments.query(Q.where('post_id', postId)));
+  const [query] = useState(() =>
+    collections.comments.query(Q.where('post_id', postId))
+  );
 
   return useQuery(query);
 }
@@ -242,7 +247,8 @@ export const dbOperations = {
           }
         }
         if (data.likesCount !== undefined) p.likesCount = data.likesCount;
-        if (data.commentsCount !== undefined) p.commentsCount = data.commentsCount;
+        if (data.commentsCount !== undefined)
+          p.commentsCount = data.commentsCount;
       });
     });
   },

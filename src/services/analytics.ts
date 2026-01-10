@@ -13,17 +13,8 @@
 
 import type PostHog from 'posthog-react-native';
 
-interface PostHogClient {
-  capture: (event: string, properties?: Record<string, unknown>) => void;
-  identify: (userId: string, properties?: Record<string, unknown>) => void;
-  group: (groupType: string, groupKey: string, properties?: Record<string, unknown>) => void;
-  reset: () => void;
-  isFeatureEnabled: (flag: string) => boolean | undefined;
-  getFeatureFlag: (flag: string) => string | boolean | undefined;
-  flush: () => Promise<void>;
-}
-
-let posthogClient: PostHogClient | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let posthogClient: any = null;
 
 /**
  * Initialize PostHog analytics
@@ -54,14 +45,16 @@ export async function initializePostHog(): Promise<typeof PostHog | null> {
 /**
  * Set the PostHog client instance (called by PostHogProvider)
  */
-export function setPostHog(client: PostHogClient): void {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function setPostHog(client: any): void {
   posthogClient = client;
 }
 
 /**
  * Get the PostHog client instance
  */
-export function getPostHog(): PostHogClient | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getPostHog(): any {
   return posthogClient;
 }
 
@@ -71,7 +64,7 @@ export function getPostHog(): PostHogClient | null {
  * @param properties Optional event properties
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function trackEvent(eventName: string, properties?: Record<string, unknown>): void {
+export function trackEvent(eventName: string, properties?: Record<string, any>): void {
   if (!posthogClient) {
     console.warn('PostHog not initialized. Use PostHogProvider first.');
     return;
@@ -86,7 +79,7 @@ export function trackEvent(eventName: string, properties?: Record<string, unknow
  * @param properties Optional user properties
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function identifyUser(userId: string, properties?: Record<string, unknown>): void {
+export function identifyUser(userId: string, properties?: Record<string, any>): void {
   if (!posthogClient) {
     console.warn('PostHog not initialized. Use PostHogProvider first.');
     return;
@@ -101,7 +94,7 @@ export function identifyUser(userId: string, properties?: Record<string, unknown
  * @param properties Optional screen properties
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function trackScreenView(screenName: string, properties?: Record<string, unknown>): void {
+export function trackScreenView(screenName: string, properties?: Record<string, any>): void {
   trackEvent('$screen', {
     $screen_name: screenName,
     ...properties,
@@ -113,14 +106,14 @@ export function trackScreenView(screenName: string, properties?: Record<string, 
  * @param properties User properties to set
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function setUserProperties(properties: Record<string, unknown>): void {
+export function setUserProperties(properties: Record<string, any>): void {
   if (!posthogClient) {
     console.warn('PostHog not initialized. Use PostHogProvider first.');
     return;
   }
 
   // Use group or other methods as needed
-  posthogClient.group('user', 'user', properties);
+  posthogClient.group?.('user', properties);
 }
 
 /**
