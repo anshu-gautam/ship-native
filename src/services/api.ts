@@ -1,5 +1,5 @@
+import { NetworkErrorType, networkInterceptor } from '@/lib/networkInterceptor';
 import { logError } from '@/lib/sentry';
-import { networkInterceptor, NetworkErrorType } from '@/lib/networkInterceptor';
 import type { ApiError, ApiResponse } from '@/types';
 import axios, {
   type AxiosInstance,
@@ -31,7 +31,7 @@ class ApiClient {
       (config) => {
         // Check rate limit before making request
         if (!networkInterceptor.checkRateLimit()) {
-          const error: any = new Error('Rate limit exceeded');
+          const error = new Error('Rate limit exceeded') as Error & { isRateLimitError: boolean };
           error.isRateLimitError = true;
           return Promise.reject(error);
         }
@@ -63,11 +63,7 @@ class ApiClient {
         const networkError = networkInterceptor.classifyError(error);
 
         // Log error details
-        console.error(
-          `[API] Error: ${networkError.type}`,
-          error.response?.status,
-          error.message
-        );
+        console.error(`[API] Error: ${networkError.type}`, error.response?.status, error.message);
 
         // Check if we should retry
         const retryCount = networkInterceptor.getRetryCount(config);
@@ -100,7 +96,7 @@ class ApiClient {
     };
 
     // Add network error type to API error
-    (apiError as any).networkErrorType = networkError.type;
+      (apiError as Error & { networkErrorType?: string }).networkErrorType = networkError.type;
 
     // Log error to Sentry (only for non-retryable errors or after max retries)
     if (!networkError.retryable || networkError.type === NetworkErrorType.CLIENT_ERROR) {
@@ -120,11 +116,7 @@ class ApiClient {
     return response.data;
   }
 
-  async post<T>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
+  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.client.post<ApiResponse<T>>(url, data, config);
     return response.data;
   }

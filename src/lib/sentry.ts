@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react-native';
-import Constants from 'expo-constants';
 import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV || 'development';
@@ -24,7 +24,7 @@ export const initSentry = (): void => {
     try {
       const apiHost = new URL(API_URL).host;
       tracePropagationTargets.push(new RegExp(`^https?://${apiHost.replace(/\./g, '\\.')}`));
-    } catch (error) {
+    } catch (_error) {
       console.warn('Invalid API_URL for Sentry trace propagation:', API_URL);
     }
   }

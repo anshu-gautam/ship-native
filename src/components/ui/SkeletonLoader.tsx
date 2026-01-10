@@ -120,8 +120,7 @@ export function SkeletonGroup({ count = 3, spacing = 12, itemProps }: SkeletonGr
   const id = useId();
   return (
     <View>
-      {/* biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items don't reorder, index with useId is stable */}
-      {Array.from({ length: count }).map((_, index) => (
+      {Array.from({ length: count }, (_, index) => index).map((index) => (
         <SkeletonLoader
           key={`${id}-skeleton-${index}`}
           {...itemProps}

@@ -16,7 +16,7 @@ export interface PerformanceMetric {
   name: string;
   duration: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ScreenMetrics {
@@ -49,7 +49,7 @@ class PerformanceMonitor {
   /**
    * End measuring and record the metric
    */
-  endMeasure(name: string, metadata?: Record<string, any>): number | null {
+  endMeasure(name: string, metadata?: Record<string, unknown>): number | null {
     if (!this.enabled) return null;
 
     const startTime = this.timers.get(name);
@@ -94,7 +94,11 @@ class PerformanceMonitor {
    * Measure screen render time
    */
   measureScreenRender(screenName: string): () => void {
-    if (!this.enabled) return () => {};
+    if (!this.enabled) {
+      return () => {
+        // No-op when disabled
+      };
+    }
 
     const startTime = Date.now();
 
@@ -131,7 +135,7 @@ class PerformanceMonitor {
   async measureAsync<T>(
     name: string,
     fn: () => Promise<T>,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<T> {
     if (!this.enabled) return fn();
 
@@ -209,24 +213,24 @@ class PerformanceMonitor {
 
     // Group metrics by name
     const metricsByName = new Map<string, number[]>();
-    this.metrics.forEach((metric) => {
+    for (const metric of this.metrics) {
       const durations = metricsByName.get(metric.name) || [];
       durations.push(metric.duration);
       metricsByName.set(metric.name, durations);
-    });
+    }
 
     if (metricsByName.size > 0) {
       report += 'Average Metric Durations:\n';
-      Array.from(metricsByName.entries())
-        .sort((a, b) => {
-          const avgA = a[1].reduce((s, d) => s + d, 0) / a[1].length;
-          const avgB = b[1].reduce((s, d) => s + d, 0) / b[1].length;
-          return avgB - avgA;
-        })
-        .forEach(([name, durations]) => {
-          const avg = durations.reduce((s, d) => s + d, 0) / durations.length;
-          report += `- ${name}: ${avg.toFixed(2)}ms (${durations.length} calls)\n`;
-        });
+      const sortedMetrics = Array.from(metricsByName.entries()).sort((a, b) => {
+        const avgA = a[1].reduce((s, d) => s + d, 0) / a[1].length;
+        const avgB = b[1].reduce((s, d) => s + d, 0) / b[1].length;
+        return avgB - avgA;
+      });
+
+      for (const [name, durations] of sortedMetrics) {
+        const avg = durations.reduce((s, d) => s + d, 0) / durations.length;
+        report += `- ${name}: ${avg.toFixed(2)}ms (${durations.length} calls)\n`;
+      }
     }
 
     return report;
@@ -247,5 +251,5 @@ export function usePerformanceMonitor(screenName: string): void {
   // Call endMeasure when component unmounts or after interactions
   React.useEffect(() => {
     return endMeasure;
-  }, []);
+  }, [endMeasure]);
 }

@@ -21,7 +21,7 @@ export interface QueuedRequest {
   url: string;
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   priority: number; // Higher number = higher priority
   attempts: number;
   createdAt: number;
@@ -254,7 +254,7 @@ export async function withOfflineQueue<T>(
     url: string;
     method: QueuedRequest['method'];
     headers?: Record<string, string>;
-    body?: any;
+    body?: unknown;
     priority?: number;
   },
   fn: () => Promise<T>

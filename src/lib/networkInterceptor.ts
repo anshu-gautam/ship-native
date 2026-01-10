@@ -44,7 +44,7 @@ interface RateLimitConfig {
 }
 
 interface RequestCacheEntry {
-  promise: Promise<any>;
+  promise: Promise<unknown>;
   timestamp: number;
 }
 
@@ -105,7 +105,7 @@ export class NetworkInterceptor {
     if (status === 429) {
       networkError.type = NetworkErrorType.RATE_LIMITED;
       networkError.retryable = true;
-      networkError.retryAfter = parseInt(error.response.headers['retry-after'] || '60', 10);
+      networkError.retryAfter = Number.parseInt(error.response.headers['retry-after'] || '60', 10);
       return networkError;
     }
 
@@ -139,7 +139,7 @@ export class NetworkInterceptor {
     }
 
     // Exponential backoff: delay * 2^retryCount with jitter
-    const exponentialDelay = this.retryConfig.retryDelay * Math.pow(2, retryCount);
+    const exponentialDelay = this.retryConfig.retryDelay * 2 ** retryCount;
     const jitter = Math.random() * 1000; // Add up to 1 second of jitter
     return exponentialDelay + jitter;
   }
@@ -171,16 +171,13 @@ export class NetworkInterceptor {
   /**
    * Retry request with exponential backoff
    */
-  async retryRequest(
-    error: AxiosError,
-    retryCount = 0
-  ): Promise<any> {
+  async retryRequest(error: AxiosError, retryCount = 0): Promise<unknown> {
     const networkError = this.classifyError(error);
 
     // Check if we should retry
     if (retryCount >= this.retryConfig.maxRetries || !this.isRetryableError(error)) {
       console.error(
-        `[NetworkInterceptor] Max retries reached or error not retryable:`,
+        '[NetworkInterceptor] Max retries reached or error not retryable:',
         networkError.type
       );
       Sentry.captureException(error, {
@@ -243,7 +240,7 @@ export class NetworkInterceptor {
     // Return cached promise if it exists and is recent (< 5 seconds old)
     if (cached && Date.now() - cached.timestamp < 5000) {
       console.log('[NetworkInterceptor] Returning deduplicated request');
-      return cached.promise;
+      return cached.promise as Promise<T>;
     }
 
     // Execute new request and cache it

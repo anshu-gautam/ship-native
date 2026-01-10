@@ -26,7 +26,7 @@ export interface DeepLinkTestResult {
   testName: string;
   url: string;
   parsedPath?: string;
-  parsedParams?: Record<string, any>;
+  parsedParams?: Record<string, unknown>;
   expectedPath?: string;
   expectedParams?: Record<string, string>;
   error?: string;
@@ -37,7 +37,7 @@ export interface DeepLinkTestResult {
  */
 export function parseDeepLink(url: string): {
   path: string;
-  params: Record<string, any>;
+  params: Record<string, unknown>;
 } | null {
   try {
     const parsed = Linking.parse(url);
@@ -55,7 +55,10 @@ export function parseDeepLink(url: string): {
 /**
  * Validate deep link format
  */
-export function validateDeepLink(url: string, config: DeepLinkConfig): {
+export function validateDeepLink(
+  url: string,
+  config: DeepLinkConfig
+): {
   valid: boolean;
   errors: string[];
 } {
@@ -75,7 +78,7 @@ export function validateDeepLink(url: string, config: DeepLinkConfig): {
   if (!hasScheme) {
     try {
       new URL(url);
-    } catch (error) {
+    } catch (_error) {
       errors.push('Invalid URL format');
     }
   }
@@ -289,9 +292,9 @@ export async function getCurrentURL(): Promise<string | null> {
 /**
  * Listen for deep link events (for testing)
  */
-export function addDeepLinkListener(
-  callback: (event: { url: string }) => void
-): { remove: () => void } {
+export function addDeepLinkListener(callback: (event: { url: string }) => void): {
+  remove: () => void;
+} {
   const subscription = Linking.addEventListener('url', callback);
 
   return {
@@ -333,7 +336,7 @@ export function formatTestResults(results: DeepLinkTestResult[]): string {
  */
 export function generateDeepLink(
   path: string,
-  params: Record<string, any> = {},
+  params: Record<string, unknown>,
   config: DeepLinkConfig
 ): string {
   const queryString = Object.entries(params)
@@ -350,7 +353,7 @@ export function generateDeepLink(
  */
 export function generateUniversalLink(
   path: string,
-  params: Record<string, any> = {},
+  params: Record<string, unknown>,
   config: DeepLinkConfig
 ): string | null {
   if (!config.domains || config.domains.length === 0) {
@@ -468,11 +471,11 @@ ${paramsStr ? `# Expected params:\n${paramsStr}` : '# No params to verify'}
 export function generateAllMaestroTests(testCases: DeepLinkTestCase[]): Map<string, string> {
   const tests = new Map<string, string>();
 
-  testCases.forEach((testCase) => {
+  for (const testCase of testCases) {
     const filename = `${testCase.name.toLowerCase().replace(/\s+/g, '_')}.yaml`;
     const content = generateMaestroTest(testCase);
     tests.set(filename, content);
-  });
+  }
 
   return tests;
 }
