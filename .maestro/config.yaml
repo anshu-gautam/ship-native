@@ -1,0 +1,16 @@
+# Maestro Configuration
+# Global settings for E2E tests
+
+env:
+  APP_ID: com.yourcompany.yourapp  # Update with your actual bundle ID
+
+# Test execution settings
+settings:
+  timeout: 10000  # 10 seconds default timeout
+  screenshotOnFailure: true
+  recordVideo: false
+
+# Platforms to test
+platforms:
+  - ios
+  - android

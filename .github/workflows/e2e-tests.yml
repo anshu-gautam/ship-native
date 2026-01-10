@@ -1,0 +1,119 @@
+name: E2E Tests
+
+on:
+  # Only run E2E tests manually since they require pre-built apps
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to test"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - ios
+          - android
+          - both
+
+jobs:
+  # E2E tests with Maestro on iOS
+  e2e-ios:
+    name: E2E Tests (iOS)
+    runs-on: macos-latest
+    if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'both'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install Maestro
+        run: |
+          brew tap mobile-dev-inc/tap
+          brew install maestro
+
+      - name: Check for Maestro tests
+        id: maestro-check
+        run: |
+          if [ -d ".maestro" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "No .maestro directory found - skipping E2E tests"
+          fi
+
+      - name: Run Maestro E2E tests
+        if: steps.maestro-check.outputs.has_tests == 'true'
+        run: |
+          maestro test .maestro/ --format junit --output maestro-results.xml
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always() && steps.maestro-check.outputs.has_tests == 'true'
+        with:
+          name: maestro-ios-results
+          path: maestro-results.xml
+
+  # E2E tests with Maestro on Android
+  e2e-android:
+    name: E2E Tests (Android)
+    runs-on: ubuntu-latest
+    if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'both'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Check for Maestro tests
+        id: maestro-check
+        run: |
+          if [ -d ".maestro" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "No .maestro directory found - skipping E2E tests"
+          fi
+
+      - name: Setup and Run E2E (if tests exist)
+        if: steps.maestro-check.outputs.has_tests == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          script: |
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+            export PATH="$PATH":"$HOME/.maestro/bin"
+            maestro test .maestro/ --format junit --output maestro-results.xml
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always() && steps.maestro-check.outputs.has_tests == 'true'
+        with:
+          name: maestro-android-results
+          path: maestro-results.xml

@@ -1,0 +1,27 @@
+# Maestro E2E Test: Payment Flow
+# Tests the subscription purchase flow
+#
+# Run with: maestro test .maestro/payment-flow.yaml
+
+appId: ${APP_ID}
+---
+
+- launchApp
+- tapOn: "Upgrade to Premium"
+- assertVisible: "Subscription Plans"
+
+# Select yearly plan
+- tapOn: "Yearly Subscription"
+- assertVisible: "Best Value"
+
+# Verify pricing is displayed
+- assertVisible: "$79.99"
+- assertVisible: "per year"
+
+# Test restore purchases button
+- tapOn: "Restore Purchases"
+- assertVisible: "Checking..."
+
+# Cancel and go back
+- tapOn: "Close"
+- assertVisible: "Home"

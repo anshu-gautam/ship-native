@@ -1,0 +1,24 @@
+# Maestro E2E Test: Navigation Flow
+# Tests navigation between screens
+#
+# Run with: maestro test .maestro/navigation-flow.yaml
+
+appId: ${APP_ID}
+---
+
+- launchApp
+- assertVisible: "Home"
+
+# Navigate to Profile
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- assertVisible: "Settings"
+
+# Navigate to Settings
+- tapOn: "Settings"
+- assertVisible: "Settings"
+- assertVisible: "Preferences"
+
+# Go back to Home
+- tapOn: "Home"
+- assertVisible: "Home"
