@@ -3,7 +3,7 @@
  */
 
 import { Model } from '@nozbe/watermelondb';
-import { children, date, field, readonly, relation } from '@nozbe/watermelondb/decorators';
+import { field, date, readonly, children, relation } from '@nozbe/watermelondb/decorators';
 import type Comment from './Comment';
 import type User from './User';
 

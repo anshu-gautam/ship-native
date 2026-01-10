@@ -56,9 +56,9 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
-        r: Number.parseInt(result[1], 16),
-        g: Number.parseInt(result[2], 16),
-        b: Number.parseInt(result[3], 16),
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
       }
     : null;
 }
@@ -70,7 +70,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 export function getRelativeLuminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r, g, b].map((channel) => {
     const sRGB = channel / 255;
-    return sRGB <= 0.03928 ? sRGB / 12.92 : ((sRGB + 0.055) / 1.055) ** 2.4;
+    return sRGB <= 0.03928 ? sRGB / 12.92 : Math.pow((sRGB + 0.055) / 1.055, 2.4);
   });
 
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
@@ -80,7 +80,10 @@ export function getRelativeLuminance(r: number, g: number, b: number): number {
  * Calculate contrast ratio between two colors
  * https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio
  */
-export function getContrastRatio(foreground: string, background: string): number | null {
+export function getContrastRatio(
+  foreground: string,
+  background: string
+): number | null {
   const fg = hexToRgb(foreground);
   const bg = hexToRgb(background);
 
@@ -167,10 +170,9 @@ export function validateTouchTargetSize(
 /**
  * Validate accessibility label
  */
-export function validateAccessibilityLabel(label: string | undefined): {
-  valid: boolean;
-  message?: string;
-} {
+export function validateAccessibilityLabel(
+  label: string | undefined
+): { valid: boolean; message?: string } {
   if (!label || label.trim().length === 0) {
     return {
       valid: false,
@@ -186,7 +188,13 @@ export function validateAccessibilityLabel(label: string | undefined): {
   }
 
   // Check for unhelpful labels
-  const unhelpfulPatterns = [/^button$/i, /^image$/i, /^icon$/i, /^tap here$/i, /^click here$/i];
+  const unhelpfulPatterns = [
+    /^button$/i,
+    /^image$/i,
+    /^icon$/i,
+    /^tap here$/i,
+    /^click here$/i,
+  ];
 
   for (const pattern of unhelpfulPatterns) {
     if (pattern.test(label)) {
@@ -400,22 +408,12 @@ export class AccessibilityAuditor {
 /**
  * Accessibility testing helpers for Jest
  */
-interface TestElement {
-  props?: {
-    accessibilityLabel?: string;
-    style?: {
-      width?: number;
-      height?: number;
-    };
-  };
-}
-
 export const a11yTestHelpers = {
   /**
    * Assert element has accessibility label
    */
   assertHasAccessibilityLabel(
-    element: TestElement,
+    element: any,
     expectedLabel?: string
   ): { pass: boolean; message: string } {
     const label = element.props?.accessibilityLabel;
@@ -451,7 +449,9 @@ export const a11yTestHelpers = {
   /**
    * Assert element has proper touch target size
    */
-  assertHasTouchTargetSize(element: TestElement): { pass: boolean; message: string } {
+  assertHasTouchTargetSize(
+    element: any
+  ): { pass: boolean; message: string } {
     const style = element.props?.style || {};
     const width = style.width || 0;
     const height = style.height || 0;

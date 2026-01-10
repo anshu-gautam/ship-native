@@ -3,15 +3,15 @@
  */
 
 import {
-  AccessibilityAuditor,
-  WCAG_CONTRAST_RATIOS,
-  a11yTestHelpers,
-  getContrastRatio,
-  getRelativeLuminance,
   hexToRgb,
-  validateAccessibilityLabel,
+  getRelativeLuminance,
+  getContrastRatio,
   validateColorContrast,
   validateTouchTargetSize,
+  validateAccessibilityLabel,
+  AccessibilityAuditor,
+  a11yTestHelpers,
+  WCAG_CONTRAST_RATIOS,
 } from '../accessibility';
 
 describe('Accessibility Utilities', () => {
@@ -451,7 +451,12 @@ describe('Accessibility Utilities', () => {
       });
 
       it('handles large text threshold', () => {
-        const result = a11yTestHelpers.assertColorContrast('#8A8A8A', '#FFFFFF', 'AA', true);
+        const result = a11yTestHelpers.assertColorContrast(
+          '#8A8A8A',
+          '#FFFFFF',
+          'AA',
+          true
+        );
         expect(result.pass).toBe(true); // 3:1 threshold for large text
       });
     });

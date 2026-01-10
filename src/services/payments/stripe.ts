@@ -5,8 +5,11 @@
  * Opens Stripe Checkout in browser or WebView for subscriptions
  */
 
-import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
-import { Linking } from 'react-native';
+import {
+  initPaymentSheet,
+  presentPaymentSheet,
+} from "@stripe/stripe-react-native";
+import { Linking } from "react-native";
 
 export interface StripeCheckoutOptions {
   /**
@@ -52,15 +55,16 @@ export async function createCheckoutSession(
     const response = await fetch(
       `${process.env.EXPO_PUBLIC_API_URL}/api/payments/create-checkout`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           priceId: options.priceId,
           email: options.email,
           userId: options.userId,
-          successUrl: options.successUrl || `${getAppScheme()}://payment/success`,
+          successUrl:
+            options.successUrl || `${getAppScheme()}://payment/success`,
           cancelUrl: options.cancelUrl || `${getAppScheme()}://payment/cancel`,
           metadata: options.metadata,
         }),
@@ -68,13 +72,13 @@ export async function createCheckoutSession(
     );
 
     if (!response.ok) {
-      throw new Error('Failed to create checkout session');
+      throw new Error("Failed to create checkout session");
     }
 
     const data = await response.json();
     return { url: data.url };
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    console.error("Error creating checkout session:", error);
     return null;
   }
 }
@@ -82,7 +86,9 @@ export async function createCheckoutSession(
 /**
  * Open Stripe Checkout in browser
  */
-export async function openCheckout(options: StripeCheckoutOptions): Promise<boolean> {
+export async function openCheckout(
+  options: StripeCheckoutOptions
+): Promise<boolean> {
   try {
     const session = await createCheckoutSession(options);
     if (!session) {
@@ -96,7 +102,7 @@ export async function openCheckout(options: StripeCheckoutOptions): Promise<bool
     }
     return false;
   } catch (error) {
-    console.error('Error opening checkout:', error);
+    console.error("Error opening checkout:", error);
     return false;
   }
 }
@@ -106,16 +112,16 @@ export async function openCheckout(options: StripeCheckoutOptions): Promise<bool
  */
 export async function createPaymentIntent(
   amount: number,
-  currency = 'usd',
+  currency = "usd",
   metadata?: Record<string, string>
 ): Promise<{ clientSecret: string; publishableKey: string } | null> {
   try {
     const response = await fetch(
       `${process.env.EXPO_PUBLIC_API_URL}/api/payments/create-payment-intent`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           amount,
@@ -126,7 +132,7 @@ export async function createPaymentIntent(
     );
 
     if (!response.ok) {
-      throw new Error('Failed to create payment intent');
+      throw new Error("Failed to create payment intent");
     }
 
     const data = await response.json();
@@ -135,7 +141,7 @@ export async function createPaymentIntent(
       publishableKey: data.publishableKey,
     };
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error("Error creating payment intent:", error);
     return null;
   }
 }
@@ -146,17 +152,17 @@ export async function createPaymentIntent(
  */
 export async function presentPayment(
   amount: number,
-  currency = 'usd',
+  currency = "usd",
   metadata?: Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const paymentIntent = await createPaymentIntent(amount, currency, metadata);
     if (!paymentIntent) {
-      return { success: false, error: 'Failed to create payment intent' };
+      return { success: false, error: "Failed to create payment intent" };
     }
 
     const { error: initError } = await initPaymentSheet({
-      merchantDisplayName: process.env.EXPO_PUBLIC_APP_NAME || 'My App',
+      merchantDisplayName: process.env.EXPO_PUBLIC_APP_NAME || "My App",
       paymentIntentClientSecret: paymentIntent.clientSecret,
       allowsDelayedPaymentMethods: true,
     });
@@ -168,18 +174,18 @@ export async function presentPayment(
     const { error: presentError } = await presentPaymentSheet();
 
     if (presentError) {
-      if (presentError.code === 'Canceled') {
-        return { success: false, error: 'User cancelled payment' };
+      if (presentError.code === "Canceled") {
+        return { success: false, error: "User cancelled payment" };
       }
       return { success: false, error: presentError.message };
     }
 
     return { success: true };
   } catch (error: unknown) {
-    console.error('Error presenting payment:', error);
+    console.error("Error presenting payment:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Payment failed',
+      error: error instanceof Error ? error.message : "Payment failed",
     };
   }
 }
@@ -189,7 +195,7 @@ export async function presentPayment(
  */
 function getAppScheme(): string {
   // Get from app.json scheme or use default
-  return process.env.EXPO_PUBLIC_APP_SCHEME || 'myapp';
+  return process.env.EXPO_PUBLIC_APP_SCHEME || "myapp";
 }
 
 /**
@@ -201,9 +207,9 @@ export async function openCustomerPortal(customerId: string): Promise<boolean> {
     const response = await fetch(
       `${process.env.EXPO_PUBLIC_API_URL}/api/payments/create-portal-session`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           customerId,
@@ -213,7 +219,7 @@ export async function openCustomerPortal(customerId: string): Promise<boolean> {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to create portal session');
+      throw new Error("Failed to create portal session");
     }
 
     const data = await response.json();
@@ -224,7 +230,7 @@ export async function openCustomerPortal(customerId: string): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Error opening customer portal:', error);
+    console.error("Error opening customer portal:", error);
     return false;
   }
 }
@@ -233,7 +239,7 @@ export async function openCustomerPortal(customerId: string): Promise<boolean> {
  * Verify payment status (via your backend)
  */
 export async function verifyPayment(paymentIntentId: string): Promise<{
-  status: 'succeeded' | 'processing' | 'requires_payment_method' | 'failed';
+  status: "succeeded" | "processing" | "requires_payment_method" | "failed";
   amount?: number;
   currency?: string;
 }> {
@@ -243,7 +249,7 @@ export async function verifyPayment(paymentIntentId: string): Promise<{
     );
 
     if (!response.ok) {
-      throw new Error('Failed to verify payment');
+      throw new Error("Failed to verify payment");
     }
 
     const data = await response.json();
@@ -253,7 +259,7 @@ export async function verifyPayment(paymentIntentId: string): Promise<{
       currency: data.currency,
     };
   } catch (error) {
-    console.error('Error verifying payment:', error);
-    return { status: 'failed' };
+    console.error("Error verifying payment:", error);
+    return { status: "failed" };
   }
 }

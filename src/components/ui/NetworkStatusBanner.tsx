@@ -71,13 +71,16 @@ export function NetworkStatusBanner({
 
   useEffect(() => {
     if (showBanner && isConnected !== null) {
+      // Animate in
       translateY.value = withSpring(0, { damping: 15 });
       opacity.value = withTiming(1, { duration: 300 });
     } else {
+      // Animate out
       translateY.value = withSpring(position === 'top' ? -100 : 100, { damping: 15 });
       opacity.value = withTiming(0, { duration: 300 });
     }
-  }, [showBanner, isConnected, position, translateY, opacity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showBanner, isConnected, position]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
