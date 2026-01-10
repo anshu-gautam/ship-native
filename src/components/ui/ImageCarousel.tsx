@@ -2,7 +2,7 @@
  * Image Carousel Component
  *
  * Swipeable image carousel with pagination dots
- * Uses react-native-reanimated for smooth animations
+ * Uses React Native's built-in components (no reanimated) for Expo Go compatibility
  */
 
 import { useRef, useState } from 'react';
@@ -17,7 +17,6 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import Animated, { useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -94,22 +93,6 @@ interface ImageCarouselProps {
 
 /**
  * Image Carousel Component
- *
- * @example
- * ```tsx
- * const images = [
- *   { uri: 'https://example.com/image1.jpg', alt: 'Image 1' },
- *   { uri: 'https://example.com/image2.jpg', alt: 'Image 2' },
- *   { uri: 'https://example.com/image3.jpg', alt: 'Image 3' },
- * ];
- *
- * <ImageCarousel
- *   images={images}
- *   height={250}
- *   autoPlayInterval={3000}
- *   borderRadius={12}
- * />
- * ```
  */
 export function ImageCarousel({
   images,
@@ -185,37 +168,21 @@ export function ImageCarousel({
       {showPagination && images.length > 1 && (
         <View style={styles.pagination}>
           {images.map((image, index) => (
-            <PaginationDot
+            <View
               key={image.id || `${image.uri}-${index}`}
-              index={index}
-              activeIndex={activeIndex}
+              style={[
+                styles.dot,
+                activeIndex === index && styles.activeDot,
+                {
+                  transform: [{ scale: activeIndex === index ? 1 : 0.6 }],
+                  opacity: activeIndex === index ? 1 : 0.4,
+                },
+              ]}
             />
           ))}
         </View>
       )}
     </View>
-  );
-}
-
-interface PaginationDotProps {
-  index: number;
-  activeIndex: number;
-}
-
-function PaginationDot({ index, activeIndex }: PaginationDotProps) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(Math.abs(activeIndex - index), [0, 1], [1, 0.6], Extrapolate.CLAMP);
-
-    const opacity = interpolate(Math.abs(activeIndex - index), [0, 1], [1, 0.4], Extrapolate.CLAMP);
-
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View style={[styles.dot, activeIndex === index && styles.activeDot, animatedStyle]} />
   );
 }
 

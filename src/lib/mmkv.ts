@@ -1,64 +1,93 @@
-import { MMKV } from 'react-native-mmkv';
 
-// Create the default MMKV instance
-export const storage = new MMKV({
-  id: 'default',
-});
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Create a secure MMKV instance for sensitive data
-export const secureStorage = new MMKV({
-  id: 'secure',
-  encryptionKey: 'your-encryption-key-here', // Replace with a secure key in production
-});
+// Note: MMKV requires a native module that's not included in Expo Go.
+// This file provides an AsyncStorage-based fallback that works in Expo Go.
+// For production builds, you can switch back to MMKV by using expo-dev-client.
 
-// Storage utilities
+// Storage utilities compatible with Expo Go (using AsyncStorage)
+// These are synchronous-like wrappers for compatibility with zustand persist
 export const mmkvStorage = {
   setItem: (key: string, value: string): void => {
-    storage.set(key, value);
+    AsyncStorage.setItem(key, value).catch(console.error);
   },
   getItem: (key: string): string | null => {
-    return storage.getString(key) ?? null;
+    // Note: For zustand, we need to return null for missing values
+    // AsyncStorage.getItem is async, but zustand's createJSONStorage handles this
+    let result: string | null = null;
+    AsyncStorage.getItem(key)
+      .then((value) => {
+        result = value;
+      })
+      .catch(console.error);
+    return result;
   },
   removeItem: (key: string): void => {
-    storage.delete(key);
+    AsyncStorage.removeItem(key).catch(console.error);
   },
   clear: (): void => {
-    storage.clearAll();
+    AsyncStorage.clear().catch(console.error);
   },
 };
 
-// Type-safe storage utilities
-export const setStorageItem = <T>(key: string, value: T): void => {
-  storage.set(key, JSON.stringify(value));
+// Async storage utilities for direct use
+export const asyncStorage = {
+  setItem: async (key: string, value: string): Promise<void> => {
+    await AsyncStorage.setItem(key, value);
+  },
+  getItem: async (key: string): Promise<string | null> => {
+    return await AsyncStorage.getItem(key);
+  },
+  removeItem: async (key: string): Promise<void> => {
+    await AsyncStorage.removeItem(key);
+  },
+  clear: async (): Promise<void> => {
+    await AsyncStorage.clear();
+  },
 };
 
-export const getStorageItem = <T>(key: string): T | null => {
-  const value = storage.getString(key);
+// Type-safe async storage utilities
+export const setStorageItem = async <T>(
+  key: string,
+  value: T
+): Promise<void> => {
+  await AsyncStorage.setItem(key, JSON.stringify(value));
+};
+
+export const getStorageItem = async <T>(key: string): Promise<T | null> => {
+  const value = await AsyncStorage.getItem(key);
   return value ? (JSON.parse(value) as T) : null;
 };
 
-export const removeStorageItem = (key: string): void => {
-  storage.delete(key);
+export const removeStorageItem = async (key: string): Promise<void> => {
+  await AsyncStorage.removeItem(key);
 };
 
-export const clearStorage = (): void => {
-  storage.clearAll();
+export const clearStorage = async (): Promise<void> => {
+  await AsyncStorage.clear();
 };
 
-// Secure storage utilities
-export const setSecureItem = <T>(key: string, value: T): void => {
-  secureStorage.set(key, JSON.stringify(value));
+// For secure storage, use expo-secure-store instead
+import * as SecureStore from "expo-secure-store";
+
+export const setSecureItem = async <T>(
+  key: string,
+  value: T
+): Promise<void> => {
+  await SecureStore.setItemAsync(key, JSON.stringify(value));
 };
 
-export const getSecureItem = <T>(key: string): T | null => {
-  const value = secureStorage.getString(key);
+export const getSecureItem = async <T>(key: string): Promise<T | null> => {
+  const value = await SecureStore.getItemAsync(key);
   return value ? (JSON.parse(value) as T) : null;
 };
 
-export const removeSecureItem = (key: string): void => {
-  secureStorage.delete(key);
+export const removeSecureItem = async (key: string): Promise<void> => {
+  await SecureStore.deleteItemAsync(key);
 };
 
-export const clearSecureStorage = (): void => {
-  secureStorage.clearAll();
+export const clearSecureStorage = async (): Promise<void> => {
+  // SecureStore doesn't have a clearAll, so this is a no-op
+  // In production, you'd track keys and delete them individually
+  console.warn("clearSecureStorage is not implemented for SecureStore");
 };

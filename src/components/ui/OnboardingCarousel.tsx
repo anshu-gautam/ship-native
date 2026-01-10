@@ -2,6 +2,7 @@
  * Onboarding Carousel Component
  *
  * A beautiful onboarding flow with swipeable slides
+ * Uses React Native's built-in components (no reanimated) for Expo Go compatibility
  */
 
 import { useRef, useState } from 'react';
@@ -15,7 +16,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -79,30 +79,6 @@ interface OnboardingCarouselProps {
 
 /**
  * Onboarding Carousel Component
- *
- * @example
- * ```tsx
- * const slides = [
- *   {
- *     title: 'Welcome',
- *     description: 'Welcome to our app!',
- *     icon: <Icon name="hand-wave" />,
- *     backgroundColor: '#3b82f6',
- *   },
- *   {
- *     title: 'Feature 1',
- *     description: 'Amazing feature description',
- *     icon: <Icon name="star" />,
- *     backgroundColor: '#10b981',
- *   },
- * ];
- *
- * <OnboardingCarousel
- *   slides={slides}
- *   onComplete={handleComplete}
- *   onSkip={handleSkip}
- * />
- * ```
  */
 export function OnboardingCarousel({
   slides,
@@ -168,10 +144,16 @@ export function OnboardingCarousel({
         {/* Pagination dots */}
         <View style={styles.pagination}>
           {slides.map((slide, index) => (
-            <PaginationDot
+            <View
               key={slide.id || `${slide.title}-${index}`}
-              index={index}
-              activeIndex={activeIndex}
+              style={[
+                styles.dot,
+                activeIndex === index && styles.activeDot,
+                {
+                  transform: [{ scale: activeIndex === index ? 1 : 0.6 }],
+                  opacity: activeIndex === index ? 1 : 0.4,
+                },
+              ]}
             />
           ))}
         </View>
@@ -185,28 +167,6 @@ export function OnboardingCarousel({
         </Pressable>
       </View>
     </View>
-  );
-}
-
-interface PaginationDotProps {
-  index: number;
-  activeIndex: number;
-}
-
-function PaginationDot({ index, activeIndex }: PaginationDotProps) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [index - 1, index, index + 1];
-    const scale = interpolate(activeIndex, inputRange, [0.6, 1, 0.6], Extrapolate.CLAMP);
-    const opacity = interpolate(activeIndex, inputRange, [0.4, 1, 0.4], Extrapolate.CLAMP);
-
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View style={[styles.dot, activeIndex === index && styles.activeDot, animatedStyle]} />
   );
 }
 

@@ -1,5 +1,6 @@
 import { useI18n, useTheme } from '@/hooks';
 import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
 
 export default function TabLayout() {
   const { colors } = useTheme();
@@ -52,15 +53,19 @@ export default function TabLayout() {
   );
 }
 
-// Simple icon components (you can replace these with proper icons from @expo/vector-icons)
-const HomeIcon = ({ color }: { color: string }) => <span style={{ fontSize: 24, color }}>🏠</span>;
+// Simple icon components using Text (you can replace these with proper icons from @expo/vector-icons)
+const HomeIcon = ({ color }: { color: string }) => (
+  <Text style={{ fontSize: 24, color }}>🏠</Text>
+);
 
-const AIIcon = ({ color }: { color: string }) => <span style={{ fontSize: 24, color }}>🤖</span>;
+const AIIcon = ({ color }: { color: string }) => (
+  <Text style={{ fontSize: 24, color }}>🤖</Text>
+);
 
 const ProfileIcon = ({ color }: { color: string }) => (
-  <span style={{ fontSize: 24, color }}>👤</span>
+  <Text style={{ fontSize: 24, color }}>👤</Text>
 );
 
 const SettingsIcon = ({ color }: { color: string }) => (
-  <span style={{ fontSize: 24, color }}>⚙️</span>
+  <Text style={{ fontSize: 24, color }}>⚙️</Text>
 );

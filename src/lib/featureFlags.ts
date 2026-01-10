@@ -8,24 +8,13 @@
  * - Override in debug menu
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useMMKVString } from 'react-native-mmkv';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useState, useEffect, useCallback } from "react";
 
-// Extend global type for MMKV storage
-declare global {
-  // eslint-disable-next-line no-var
-  var mmkvStorage:
-    | {
-        getString: (key: string) => string | undefined;
-        set: (key: string, value: string) => void;
-        delete: (key: string) => void;
-      }
-    | undefined;
-}
-
-const REMOTE_FLAGS_KEY = '@app/remoteFeatureFlags';
-const FLAGS_LAST_FETCH_KEY = '@app/flagsLastFetch';
+const REMOTE_FLAGS_KEY = "@app/remoteFeatureFlags";
+const FLAGS_LAST_FETCH_KEY = "@app/flagsLastFetch";
 const FLAGS_FETCH_INTERVAL = 1000 * 60 * 60; // 1 hour
+const FLAG_OVERRIDE_PREFIX = "@app/flag_override_";
 
 export interface FeatureFlag {
   key: string;
@@ -56,33 +45,34 @@ class FeatureFlagsManager {
   private defaultFlags: Record<string, FeatureFlag> = {
     // Example flags - customize for your app
     newDesign: {
-      key: 'newDesign',
-      name: 'New Design',
-      description: 'Enable new UI design',
+      key: "newDesign",
+      name: "New Design",
+      description: "Enable new UI design",
       enabled: false,
       enabledForPercentage: 50, // 50% rollout
     },
     aiChat: {
-      key: 'aiChat',
-      name: 'AI Chat',
-      description: 'Enable AI chat feature',
+      key: "aiChat",
+      name: "AI Chat",
+      description: "Enable AI chat feature",
       enabled: false,
     },
     premiumFeatures: {
-      key: 'premiumFeatures',
-      name: 'Premium Features',
-      description: 'Enable premium features',
+      key: "premiumFeatures",
+      name: "Premium Features",
+      description: "Enable premium features",
       enabled: false,
     },
     darkMode: {
-      key: 'darkMode',
-      name: 'Dark Mode',
-      description: 'Enable dark mode',
+      key: "darkMode",
+      name: "Dark Mode",
+      description: "Enable dark mode",
       enabled: true, // Enabled by default
     },
   };
 
   private remoteFlags: Record<string, FeatureFlag> = {};
+  private debugOverrides: Record<string, boolean | null> = {};
 
   /**
    * Configure feature flags
@@ -92,13 +82,36 @@ class FeatureFlagsManager {
   }
 
   /**
+   * Initialize debug overrides from AsyncStorage
+   */
+  async initDebugOverrides(): Promise<void> {
+    if (!__DEV__) return;
+
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const overrideKeys = keys.filter((k) =>
+        k.startsWith(FLAG_OVERRIDE_PREFIX)
+      );
+      const pairs = await AsyncStorage.multiGet(overrideKeys);
+
+      for (const [key, value] of pairs) {
+        const flagKey = key.replace(FLAG_OVERRIDE_PREFIX, "");
+        if (value === "true") this.debugOverrides[flagKey] = true;
+        else if (value === "false") this.debugOverrides[flagKey] = false;
+      }
+    } catch (error) {
+      console.error("[FeatureFlags] Error loading debug overrides:", error);
+    }
+  }
+
+  /**
    * Check if a feature is enabled
    */
   isEnabled(flagKey: string): boolean {
     // 1. Check debug override first (if allowed)
     if (this.config.allowDebugOverrides && __DEV__) {
-      const debugOverride = this.getDebugOverride(flagKey);
-      if (debugOverride !== null) {
+      const debugOverride = this.debugOverrides[flagKey];
+      if (debugOverride !== undefined && debugOverride !== null) {
         return debugOverride;
       }
     }
@@ -157,7 +170,7 @@ class FeatureFlagsManager {
     if (percentage <= 0) return false;
 
     // Use userId or a device-specific identifier for consistency
-    const identifier = this.config.userId || 'anonymous';
+    const identifier = this.config.userId || "anonymous";
     const hash = this.hashString(`${flagKey}:${identifier}`);
     const bucket = hash % 100;
 
@@ -178,37 +191,30 @@ class FeatureFlagsManager {
   }
 
   /**
-   * Get debug override value
-   */
-  private getDebugOverride(flagKey: string): boolean | null {
-    try {
-      // Read from MMKV storage
-      const stored = global.mmkvStorage?.getString(`flag_override_${flagKey}`);
-      if (stored === 'true') return true;
-      if (stored === 'false') return false;
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Set debug override (dev only)
    */
-  setDebugOverride(flagKey: string, value: boolean | null): void {
+  async setDebugOverride(
+    flagKey: string,
+    value: boolean | null
+  ): Promise<void> {
     if (!__DEV__) {
-      console.warn('[FeatureFlags] Debug overrides only available in development');
+      console.warn(
+        "[FeatureFlags] Debug overrides only available in development"
+      );
       return;
     }
 
     try {
+      const storageKey = `${FLAG_OVERRIDE_PREFIX}${flagKey}`;
       if (value === null) {
-        global.mmkvStorage?.delete(`flag_override_${flagKey}`);
+        await AsyncStorage.removeItem(storageKey);
+        delete this.debugOverrides[flagKey];
       } else {
-        global.mmkvStorage?.set(`flag_override_${flagKey}`, value ? 'true' : 'false');
+        await AsyncStorage.setItem(storageKey, value ? "true" : "false");
+        this.debugOverrides[flagKey] = value;
       }
     } catch (error) {
-      console.error('[FeatureFlags] Error setting debug override:', error);
+      console.error("[FeatureFlags] Error setting debug override:", error);
     }
   }
 
@@ -217,7 +223,7 @@ class FeatureFlagsManager {
    */
   async fetchRemoteFlags(): Promise<void> {
     if (!this.config.apiEndpoint) {
-      console.log('[FeatureFlags] No API endpoint configured');
+      console.log("[FeatureFlags] No API endpoint configured");
       return;
     }
 
@@ -225,15 +231,17 @@ class FeatureFlagsManager {
       // Check if we should fetch (based on interval)
       const shouldFetch = await this.shouldFetchRemoteFlags();
       if (!shouldFetch) {
-        console.log('[FeatureFlags] Skipping fetch (too soon since last fetch)');
+        console.log(
+          "[FeatureFlags] Skipping fetch (too soon since last fetch)"
+        );
         return;
       }
 
-      console.log('[FeatureFlags] Fetching remote flags...');
+      console.log("[FeatureFlags] Fetching remote flags...");
 
       const response = await fetch(this.config.apiEndpoint, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           // Add auth headers if needed
         },
       });
@@ -249,9 +257,9 @@ class FeatureFlagsManager {
       await AsyncStorage.setItem(REMOTE_FLAGS_KEY, JSON.stringify(flags));
       await AsyncStorage.setItem(FLAGS_LAST_FETCH_KEY, Date.now().toString());
 
-      console.log('[FeatureFlags] Remote flags updated');
+      console.log("[FeatureFlags] Remote flags updated");
     } catch (error) {
-      console.error('[FeatureFlags] Error fetching remote flags:', error);
+      console.error("[FeatureFlags] Error fetching remote flags:", error);
 
       // Load from cache on error
       await this.loadCachedFlags();
@@ -266,10 +274,10 @@ class FeatureFlagsManager {
       const cached = await AsyncStorage.getItem(REMOTE_FLAGS_KEY);
       if (cached) {
         this.remoteFlags = JSON.parse(cached);
-        console.log('[FeatureFlags] Loaded cached flags');
+        console.log("[FeatureFlags] Loaded cached flags");
       }
     } catch (error) {
-      console.error('[FeatureFlags] Error loading cached flags:', error);
+      console.error("[FeatureFlags] Error loading cached flags:", error);
     }
   }
 
@@ -306,29 +314,45 @@ class FeatureFlagsManager {
   /**
    * Reset all debug overrides
    */
-  resetDebugOverrides(): void {
+  async resetDebugOverrides(): Promise<void> {
     if (!__DEV__) return;
 
     const allFlags = this.getAllFlags();
     for (const flag of allFlags) {
-      this.setDebugOverride(flag.key, null);
+      await this.setDebugOverride(flag.key, null);
     }
+    this.debugOverrides = {};
+  }
+
+  /**
+   * Get debug override value
+   */
+  getDebugOverride(flagKey: string): boolean | null {
+    return this.debugOverrides[flagKey] ?? null;
   }
 }
 
 // Singleton instance
 export const featureFlags = new FeatureFlagsManager();
 
+// Initialize on load
+featureFlags.initDebugOverrides().catch(console.error);
+
 /**
  * Hook to check if feature is enabled
+ * Uses polling to check for updates (since we can't use MMKV reactive hooks)
  */
 export function useFeatureFlag(flagKey: string): boolean {
-  // For MMKV-backed flags, we can use reactive hooks
-  // This hook subscribes to changes in the debug override
-  const [_debugOverride] = useMMKVString(`flag_override_${flagKey}`);
+  const [isEnabled, setIsEnabled] = useState(() =>
+    featureFlags.isEnabled(flagKey)
+  );
 
-  // Recompute when debug override changes
-  return featureFlags.isEnabled(flagKey);
+  useEffect(() => {
+    // Recompute on mount and when flagKey changes
+    setIsEnabled(featureFlags.isEnabled(flagKey));
+  }, [flagKey]);
+
+  return isEnabled;
 }
 
 /**

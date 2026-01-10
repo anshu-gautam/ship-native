@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 interface ModalProps extends Partial<RNModalProps> {
   visible: boolean;
@@ -29,16 +28,16 @@ export const Modal: React.FC<ModalProps> = ({
   const { colors } = useTheme();
 
   return (
-    <RNModal visible={visible} transparent animationType="none" onRequestClose={onClose} {...props}>
-      <Animated.View
-        entering={FadeIn}
-        exiting={FadeOut}
-        className="flex-1 bg-black/50 justify-center items-center"
-      >
+    <RNModal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      {...props}
+    >
+      <View className="flex-1 bg-black/50 justify-center items-center">
         <Pressable className="flex-1 w-full" onPress={onClose} />
-        <Animated.View
-          entering={SlideInDown}
-          exiting={SlideOutDown}
+        <View
           className="w-11/12 max-w-md rounded-2xl p-6"
           style={{ backgroundColor: colors.card }}
         >
@@ -59,9 +58,9 @@ export const Modal: React.FC<ModalProps> = ({
             </View>
           )}
           {children}
-        </Animated.View>
+        </View>
         <Pressable className="flex-1 w-full" onPress={onClose} />
-      </Animated.View>
+      </View>
     </RNModal>
   );
 };

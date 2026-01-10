@@ -1,7 +1,7 @@
-import { mmkvStorage } from '@/lib/mmkv';
-import type { User } from '@/types';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { User } from "@/types";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -52,8 +52,8 @@ export const useAuthStore = create<AuthStore>()(
       reset: () => set(initialState),
     }),
     {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => mmkvStorage),
+      name: "auth-storage",
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,

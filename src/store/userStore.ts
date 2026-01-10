@@ -1,11 +1,11 @@
-import { mmkvStorage } from '@/lib/mmkv';
-import type { User } from '@/types';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { User } from "@/types";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 interface UserPreferences {
   language: string;
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   notificationsEnabled: boolean;
 }
 
@@ -19,7 +19,7 @@ interface UserActions {
   updateProfile: (updates: Partial<User>) => void;
   setPreferences: (preferences: Partial<UserPreferences>) => void;
   setLanguage: (language: string) => void;
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setTheme: (theme: "light" | "dark" | "system") => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   reset: () => void;
 }
@@ -29,8 +29,8 @@ type UserStore = UserState & UserActions;
 const initialState: UserState = {
   profile: null,
   preferences: {
-    language: 'en',
-    theme: 'system',
+    language: "en",
+    theme: "system",
     notificationsEnabled: true,
   },
 };
@@ -70,8 +70,8 @@ export const useUserStore = create<UserStore>()(
       reset: () => set(initialState),
     }),
     {
-      name: 'user-storage',
-      storage: createJSONStorage(() => mmkvStorage),
+      name: "user-storage",
+      storage: createJSONStorage(() => AsyncStorage),
     }
   )
 );

@@ -2,19 +2,13 @@
  * Toast Component
  *
  * Displays toast notifications with animations and styling
+ * Uses React Native's built-in Animated API for Expo Go compatibility
  */
 
 import { useToast } from '@/hooks/useToast';
 import type { Toast as ToastType } from '@/services/toast';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TOAST_COLORS = {
@@ -42,25 +36,41 @@ interface ToastItemProps {
 }
 
 function ToastItem({ toast, onHide }: ToastItemProps) {
-  const translateY = useSharedValue(toast.position === 'top' ? -100 : 100);
-  const opacity = useSharedValue(0);
+  const translateY = useRef(new Animated.Value(toast.position === 'top' ? -100 : 100)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Animate in
-    translateY.value = withSpring(0, { damping: 15 });
-    opacity.value = withTiming(1, { duration: 200 });
+    Animated.parallel([
+      Animated.spring(translateY, {
+        toValue: 0,
+        damping: 15,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     // Animate out before hiding
     if (toast.duration > 0) {
       const timeout = setTimeout(() => {
-        translateY.value = withSpring(
-          toast.position === 'top' ? -100 : 100,
-          { damping: 15 },
-          () => {
-            runOnJS(onHide)(toast.id);
-          }
-        );
-        opacity.value = withTiming(0, { duration: 200 });
+        Animated.parallel([
+          Animated.spring(translateY, {
+            toValue: toast.position === 'top' ? -100 : 100,
+            damping: 15,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          onHide(toast.id);
+        });
       }, toast.duration - 300);
 
       return () => clearTimeout(timeout);
@@ -69,22 +79,32 @@ function ToastItem({ toast, onHide }: ToastItemProps) {
     return undefined;
   }, [toast.position, toast.duration, toast.id, onHide, translateY, opacity]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
   const colors = TOAST_COLORS[toast.type];
 
   const handlePress = () => {
-    translateY.value = withSpring(toast.position === 'top' ? -100 : 100, { damping: 15 }, () => {
-      runOnJS(onHide)(toast.id);
+    Animated.parallel([
+      Animated.spring(translateY, {
+        toValue: toast.position === 'top' ? -100 : 100,
+        damping: 15,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onHide(toast.id);
     });
-    opacity.value = withTiming(0, { duration: 200 });
   };
 
   return (
-    <Animated.View style={[styles.toastItem, animatedStyle]}>
+    <Animated.View
+      style={[
+        styles.toastItem,
+        { transform: [{ translateY }], opacity },
+      ]}
+    >
       <Pressable
         onPress={handlePress}
         style={[styles.toastContent, { backgroundColor: colors.bg }]}

@@ -10,6 +10,7 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import type React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Alert,
   Platform,
@@ -20,18 +21,42 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useMMKVString } from 'react-native-mmkv';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Async storage keys for debug settings
+const DEBUG_API_ENDPOINT_KEY = '@debug/apiEndpoint';
+const DEBUG_MOCK_DATA_KEY = '@debug/mockData';
+const DEBUG_LOGGING_KEY = '@debug/logging';
 
 export interface DebugMenuProps {
   /** Callback when menu is closed */
   onClose: () => void;
 }
 
+// Custom hook for async storage string value
+function useAsyncStorageString(key: string): [string | undefined, (value: string) => void] {
+  const [value, setValue] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    AsyncStorage.getItem(key).then((storedValue) => {
+      if (storedValue !== null) {
+        setValue(storedValue);
+      }
+    });
+  }, [key]);
+
+  const setStoredValue = useCallback((newValue: string) => {
+    setValue(newValue);
+    AsyncStorage.setItem(key, newValue).catch(console.error);
+  }, [key]);
+
+  return [value, setStoredValue];
+}
+
 export const DebugMenu: React.FC<DebugMenuProps> = ({ onClose }) => {
-  const [apiEndpoint, setApiEndpoint] = useMMKVString('debug.apiEndpoint');
-  const [mockDataEnabled, setMockDataEnabled] = useMMKVString('debug.mockData');
-  const [loggingEnabled, setLoggingEnabled] = useMMKVString('debug.logging');
+  const [apiEndpoint, setApiEndpoint] = useAsyncStorageString(DEBUG_API_ENDPOINT_KEY);
+  const [mockDataEnabled, setMockDataEnabled] = useAsyncStorageString(DEBUG_MOCK_DATA_KEY);
+  const [loggingEnabled, setLoggingEnabled] = useAsyncStorageString(DEBUG_LOGGING_KEY);
 
   const appVersion = Application.nativeApplicationVersion || '1.0.0';
   const buildNumber = Application.nativeBuildVersion || '1';
@@ -46,20 +71,6 @@ export const DebugMenu: React.FC<DebugMenuProps> = ({ onClose }) => {
         onPress: async () => {
           await AsyncStorage.clear();
           Alert.alert('Success', 'AsyncStorage cleared');
-        },
-      },
-    ]);
-  };
-
-  const clearMMKV = () => {
-    Alert.alert('Clear MMKV Storage', 'This will delete all MMKV data. Continue?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear',
-        style: 'destructive',
-        onPress: () => {
-          // Clear MMKV storage
-          Alert.alert('Success', 'MMKV storage cleared');
         },
       },
     ]);
@@ -182,10 +193,7 @@ export const DebugMenu: React.FC<DebugMenuProps> = ({ onClose }) => {
         {/* Storage Management */}
         <Section title="Storage Management">
           <Pressable style={styles.dangerButton} onPress={clearAsyncStorage}>
-            <Text style={styles.dangerButtonText}>Clear AsyncStorage</Text>
-          </Pressable>
-          <Pressable style={styles.dangerButton} onPress={clearMMKV}>
-            <Text style={styles.dangerButtonText}>Clear MMKV Storage</Text>
+            <Text style={styles.dangerButtonText}>Clear All Storage</Text>
           </Pressable>
         </Section>
 

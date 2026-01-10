@@ -1,9 +1,13 @@
 import { useHaptics, useTheme } from '@/hooks';
 import type React from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+import { useRef } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -32,18 +36,20 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const { colors } = useTheme();
   const { light } = useHaptics();
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handlePress = () => {
@@ -116,6 +122,8 @@ export const Button: React.FC<ButtonProps> = ({
   const variantStyles = getVariantStyles();
   const sizeStyles = getSizeStyles();
 
+  const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
   return (
     <AnimatedTouchable
       onPress={handlePress}
@@ -123,7 +131,7 @@ export const Button: React.FC<ButtonProps> = ({
       onPressOut={handlePressOut}
       disabled={disabled || loading}
       activeOpacity={0.8}
-      style={animatedStyle}
+      style={{ transform: [{ scale: scaleAnim }] }}
       className={`rounded-lg items-center justify-center flex-row ${variantStyles.container} ${sizeStyles.container} ${fullWidth ? 'w-full' : ''} ${className}`}
     >
       {loading ? (

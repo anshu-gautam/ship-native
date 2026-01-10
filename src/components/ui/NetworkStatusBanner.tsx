@@ -3,17 +3,12 @@
  *
  * Displays a banner when the device goes offline/online
  * Automatically hides after a few seconds when back online
+ * Uses React Native's built-in Animated API for Expo Go compatibility
  */
 
 import NetInfo from '@react-native-community/netinfo';
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import { useEffect, useState, useRef } from 'react';
+import { Animated, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface NetworkStatusBannerProps {
@@ -38,8 +33,8 @@ export function NetworkStatusBanner({
   const [showBanner, setShowBanner] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const translateY = useSharedValue(position === 'top' ? -100 : 100);
-  const opacity = useSharedValue(0);
+  const translateY = useRef(new Animated.Value(position === 'top' ? -100 : 100)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Subscribe to network state changes
@@ -48,13 +43,13 @@ export function NetworkStatusBanner({
 
       // First time setup - don't show banner
       if (isConnected === null) {
-        setIsConnected(connected);
+        setIsConnected(connected ?? false);
         return;
       }
 
       // Connection state changed
       if (connected !== isConnected) {
-        setIsConnected(connected);
+        setIsConnected(connected ?? false);
         setShowBanner(true);
 
         // If back online, hide banner after delay
@@ -71,18 +66,33 @@ export function NetworkStatusBanner({
 
   useEffect(() => {
     if (showBanner && isConnected !== null) {
-      translateY.value = withSpring(0, { damping: 15 });
-      opacity.value = withTiming(1, { duration: 300 });
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: 0,
+          damping: 15,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      translateY.value = withSpring(position === 'top' ? -100 : 100, { damping: 15 });
-      opacity.value = withTiming(0, { duration: 300 });
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: position === 'top' ? -100 : 100,
+          damping: 15,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   }, [showBanner, isConnected, position, translateY, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
 
   if (isConnected === null) {
     return null;
@@ -97,7 +107,7 @@ export function NetworkStatusBanner({
         styles.container,
         position === 'top' ? { top: insets.top } : { bottom: insets.bottom },
         { backgroundColor },
-        animatedStyle,
+        { transform: [{ translateY }], opacity },
       ]}
     >
       <Text style={styles.text}>{text}</Text>

@@ -2,17 +2,11 @@
  * Skeleton Loader Component
  *
  * Displays placeholder loading states with shimmer animation
+ * Uses React Native's built-in Animated API for Expo Go compatibility
  */
 
-import { useEffect, useId } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  interpolate,
-} from 'react-native-reanimated';
+import { useEffect, useRef, useId } from 'react';
+import { Animated, StyleSheet, View, type ViewStyle } from 'react-native';
 
 interface SkeletonLoaderProps {
   /**
@@ -50,18 +44,24 @@ export function SkeletonLoader({
   style,
   variant = 'rect',
 }: SkeletonLoaderProps) {
-  const shimmer = useSharedValue(0);
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    shimmer.value = withRepeat(withTiming(1, { duration: 1500 }), -1, false);
-  }, [shimmer]);
+    const animation = Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      })
+    );
+    animation.start();
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(shimmer.value, [0, 1], [-width as number, width as number]);
+    return () => animation.stop();
+  }, [shimmerAnim]);
 
-    return {
-      transform: [{ translateX }],
-    };
+  const translateX = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-200, 200],
   });
 
   const getVariantStyle = (): ViewStyle => {
@@ -89,7 +89,12 @@ export function SkeletonLoader({
 
   return (
     <View style={[styles.container, getVariantStyle(), style]}>
-      <Animated.View style={[styles.shimmer, animatedStyle]} />
+      <Animated.View
+        style={[
+          styles.shimmer,
+          { transform: [{ translateX }] },
+        ]}
+      />
     </View>
   );
 }
